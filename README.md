@@ -1,5 +1,5 @@
 # Genomics
-## Geomics and metagenomics workshop Course Material
+## Geomics and metagenomics workshop course material
 
 * Quality control
 * Module_Artemis
