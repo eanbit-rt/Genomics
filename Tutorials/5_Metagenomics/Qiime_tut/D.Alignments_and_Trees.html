@@ -1,0 +1,45 @@
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+          
+     </head>
+
+<body style="width: 90%">
+
+<a href="C.Taxonomy_and_the_OTU_Table.html">C. Taxonomy and the OTU Table</a><i><br></i>
+<h2>D. Alignments and Trees</h2>
+
+<br style="color:rgb(19,79,92)"><ul><li style="list-style-position:outside;list-style-type:square"><span style="color:rgb(19,79,92)">Align sequences to </span><font color="#134f5c">the Greengenes core reference alignment</font></li><li style="list-style-position:outside;list-style-type:square"><font color="#134f5c">Filter and Lane mask your alignment<br></font></li><li style="list-style-position:outside;list-style-type:square"><font color="#134f5c">Build an approximately-maximum-likelihood phylogenetic tree</font></li></ul><h4><a name="TOC-Make-a-Multiple-Sequence-Alignment"></a>Make a Multiple Sequence Alignment<br></h4>To
+ test the evolutionary distance between your OTUs, taxonomy assignment 
+is not the best way to go... it depends too much on whether the taxonomy
+ database had representatives of everything in your sample, and it 
+depends on whether or not the taxonomic hierarchy used accurately 
+reflects evolution. Instead, it's better to build a real phylogenetic 
+tree, and to do that we'll need to first align our sequences. We'll be 
+using a reference alignment to align our sequences and in this version of QIIME it is usig the Greengenes core gene set so the command line you need is actually quite simple
+<br><br>The script we're using is called <b><a href="http://qiime.org/scripts/align_seqs.html">align_seqs.py</a></b> and we use it as follows:<br><br><b><span style="color:rgb(56,118,29);font-family:courier new,monospace">align_seqs.py -i rep_set.fna -o alignment/</span></b><br><br>Some of the options:<br><span>&nbsp;&nbsp;&nbsp; </span>-i [file]&nbsp; The fasta file of queries, usually your representative seqs<br><span>&nbsp;&nbsp;&nbsp; </span>-o [name]&nbsp; The name of the new directory that should be created<br><span>&nbsp;&nbsp;&nbsp; </span>-t [file]&nbsp; The template file to use (<i>used default GG core in our command above; didn't have to specify)</i><br><br>You
+ can see the alignment results in that alignment/ directory, file name 
+rep_set_aligned.fasta.&nbsp; This alignment contains lots of gaps, and 
+it includes hypervariable regions that make it difficult to build an 
+accurate tree. So, we'll filter it.&nbsp; Filtering an alignment of 16S 
+rRNA gene sequences can involve a Lane mask. QIIME already knows 
+where it is. The script you use to filter an alignment 
+is <b><a href="http://qiime.org/scripts/filter_alignment.html">filter_alignment.py</a></b> as follows:<br><br><b style="color:rgb(56,118,29);font-family:courier new,monospace">filter_alignment.py -i alignment/rep_set_aligned.fasta -o alignment/</b><br><br>Some of the options:<br><span>&nbsp;&nbsp;&nbsp; </span>-i [file]&nbsp; The fasta file of queries, usually your representative seqs<br><span>&nbsp;&nbsp;&nbsp; </span>-o [name]&nbsp; The name of the new directory that should be created<br><span>&nbsp;&nbsp;&nbsp; </span>-m [file]&nbsp; The Lane mask file to use (<i>used default GG Lane mask in our command above; didn't have to specify</i>)<br><br>This
+ created a new file in the alignment/ directory called 
+rep_set_aligned_pfiltered.fasta -- this is the file we can use to build a
+ phylogenetic tree!&nbsp; If you want to visually check the alignment, I
+ suggest using a free program called <a href="http://pbil.univ-lyon1.fr/software/seaview.html">SeaView</a> to open the rep_set_aligned_pfiltered.fasta file.<br><h4><a name="TOC-Build-a-phylogenetic-tree"></a>Build a phylogenetic tree</h4>Okay, let's make a tree out of that alignment!&nbsp; This is actually quite easy in QIIME, using the <b><a href="http://qiime.org/scripts/make_phylogeny.html">make_phylogeny.py</a></b>
+ script (which uses the FastTree approximately maximum likelihood 
+program, a good model of evolution for 16S rRNA gene sequences). The 
+input for this script is our filtered alignment.<br><b style="color:rgb(56,118,29);font-family:courier new,monospace"><br>make_phylogeny.py -i alignment/rep_set_aligned_pfiltered.fasta -o rep_set_tree.tre</b><br>
+<br>How do you look at this tree?&nbsp; You could try something like FigTree. On our server issue the following command:
+
+<br><br><b><span style="color:rgb(56,118,29);font-family:courier new,monospace">figtree rep_set_tree.tre</span></b><br><br>
+
+ <a href="http://topiaryexplorer.sourceforge.net/">Topiary Explorer</a>
+ may be a better option - it is meant to be able to import your QIIME 
+OTU table and mapping file to display data as well as the tree - try it 
+out!<br><br><div><hr><i>Next steps:</i>&nbsp;<b><a href="E.Alpha_Diversity.html">Analyzing Diversity</a></b></div><div><br></div></div></div></div></td></tr></tbody></table>
+</body></html>

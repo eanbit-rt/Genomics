@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+          
+     </head>
+
+<body style="width: 90%">
+
+<a href="Overview.html">QIIME Overview Tutorial</a><i><br></i>
+
+<h2><a name="TOC-Now-it-s-time-to-start-using-QIIME-"></a>Now it's time to start using QIIME!&nbsp;</h2><div>QIIME
+
+ commands are run by first specifying the script you want to execute, 
+and then passing that script a series of options.&nbsp; This is all done in 
+one line of text entered in the command line. For an 
+example to start with, we'll trim the barcodes an primers from the sequences, below.<br><h4><a name="TOC-Trim-Those-Barcodes"></a>Trim Those Barcodes</h4><div><span style="color:rgb(19,79,92)"><b>Goals</b></span><br style="color:rgb(19,79,92)"><ul><li style="list-style-position:outside;list-style-type:square;color:rgb(19,79,92)">Look up the command line options to QIIME scripts</li><li style="list-style-position:outside;list-style-type:square;color:rgb(19,79,92)">Use command line options<br></li><li style="list-style-position:outside;list-style-type:square;color:rgb(19,79,92)">Trim and quality filter sequence data</li><li style="list-style-position:outside;list-style-type:square"><span style="color:rgb(19,79,92)">Assign sequences to samples based on barcoded primers</span></li></ul></div>The QIIME script split_libraries.py accomplishes the task of 
+checking each sequence for a barcode and primer, trimming off the 
+barcode and primer, and then renaming the sequence so that the ID in the
+ FASTA header indicates which sample it came from.&nbsp; This script needs 
+two input files: (1.) the FASTA file of raw sequencing data, and (2.) 
+the mapping file specifying which barcodes and primers belong to which samples. You can 
+also tell the split_libraries.py script where to find the qual file, so 
+it can trim out low-quality sequence data.<br><br>To pass all this 
+information to a script in the command line, we use what are called 
+"options" or "flags." After giving the name of the script, you type a 
+space, and then an option flag such as "-i" or "-m" -- some of these 
+flags specify that the text to follow gives information on what option 
+to use, what file to process, or what new filename to create.&nbsp; <br><br><br>
+
+<br>Read the manual</b>.
+ There are lots of QIIME scripts, and each script has lots of options. 
+Whenever you are using a new script, you should always look up its 
+command line options. The QIIME website lists the options for every 
+script in the <a href="http://qiime.org/scripts/">scripts index, here</a>. For example, the information on all the options you can use with split_libraries.py is available <a href="http://qiime.org/scripts/split_libraries.html">here</a>. You can also check the command line options of most programs by passing the <b>help flag</b> to the script.&nbsp; For example, if you want to know the options for split_libraries.py, you could type:<br><br><b style="color:rgb(56,118,29);font-family:courier new,monospace">split_libraries.py -h</b><br><br>You may have to scroll up in the terminal to read all the output. Notice some of these important options for <a href="http://qiime.org/scripts/split_libraries.html">split_libraries.py</a>:<br><br><b><span style="font-family:courier new,monospace">-o DIR_PREFIX, --dir-prefix=DIR_PREFIX</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; directory prefix for output files [default: .]</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">...</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">-q QUAL_FNAMES, --qual=QUAL_FNAMES</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; names of qual files, comma-delimited [default: none]</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">...</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">-m MAP_FNAME, --map=MAP_FNAME</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; name of mapping file. NOTE: Must contain a header line</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; indicating SampleID in the first column and</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BarcodeSequence in the second, LinkerPrimerSequence in</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the third. [REQUIRED]</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">-f FASTA_FNAMES, --fasta=FASTA_FNAMES</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; names of fasta files, comma-delimited [REQUIRED]</span></b><br><br>Here is an example of running split_libraries.py on the tutorial data (all one long line of text):<br><br><b style="font-family:courier new,monospace;color:rgb(56,118,29)">split_libraries.py -m Fasting_Map.txt -f Fasting_Example.fna -q Fasting_Example.qual -o split_library_output</b><b style="font-family:courier new,monospace;color:rgb(56,118,29)">/</b><br><br>The command line options for QIIME scripts can appear in any order.&nbsp; The flag <b>-m</b> is followed by the name of the mapping file, the flag <b>-f</b> is followed by the name of the FASTA file, <b>-q</b> is followed by the qual file, and <b>-o</b> is followed by the name you want to give to the output folder (a new folder that will be created by the script). <i>Please
+ note: avoid using file names with spaces in them. In the command line, a
+ space separates one argument from another!&nbsp; If you want to use 
+files with spaces in the names, then you have to put quotes around the 
+file name.</i><br><br>Run that above command; it should only take a few 
+seconds, after which you will see a new command line prompt 
+appear.&nbsp; It is now done!&nbsp; <i>What did it do?</i>&nbsp; The script created the new directory you specified<b> </b>with the <b>-o</b> option.&nbsp; You can verify this with "<b style="font-family:courier new,monospace;color:rgb(56,118,29)">ls -lh</b>"
+ -- there should be a new directory called split_library_output.&nbsp; 
+You can see the contents within this directory using the <b><i>ls</i></b> command as well, by specifying the name of the directory to look in:<br><br><b style="color:rgb(56,118,29)">ls -lh split_library_output</b><span style="color:rgb(56,118,29)">/</span><br><br>There
+ should be three output files in that directory: histograms.txt, 
+seqs.fna, and split_library_log.txt.&nbsp; The log file tells you stats 
+on how your analysis worked out, including a table of the number of 
+sequences assigned to each sample. Read it with <i>less</i>, like this:<br><br><b style="color:rgb(56,118,29);font-family:courier new,monospace">less split_library_output/split_library_log.txt</b><br><br>
+What did <b style="color:rgb(56,118,29);font-family:courier new,monospace">split_libraries.py</b><span style="color:rgb(56,118,29)"> </span>do? 
+
+The input file with all 1399 sequences were split into nine groups, each with about 150 reads assigned to each sample.&nbsp; The splittting is based on the BarcodeSequence associated with each sample.
+
+<br><br>
+Quit, and then look at the output FASTA file:<br><br>
+<b style="color:rgb(56,118,29);font-family:courier new,monospace">less split_library_output/seqs.fna</b><br><br>The sequences are shorter, and they now have new IDs!&nbsp; For example, the first two are:<br><br><b><font size="1"><span style="font-family:courier new,monospace">&gt;PC.634_1 FLP3FBN01ELBSX orig_bc=ACAGAGTCGGCT new_bc=ACAGAGTCGGCT bc_diffs=0</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">CTGGGCCGTGTCTCAGTCCCAATGTGGCCGTTTACCCTCTCAGGCCGGCTACGCATCATC</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">GCCTTGGTGGGCCGTTACCTCACCAACTAGCTAATGCGCCGCAGGTCCATCCATGTTCAC</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">GCCTTGATGGGCGCTTTAATATACTGAGCATGCGCTCTGTATACCTATCCGGTTTTAGCT</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">ACCGTTTCCAGCAGTTATCCCGGACACATGGGCTAGG</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">&gt;PC.634_2 FLP3FBN01EG8AX orig_bc=ACAGAGTCGGCT new_bc=ACAGAGTCGGCT bc_diffs=0</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">TTGGACCGTGTCTCAGTTCCAATGTGGGGGCCTTCCTCTCAGAACCCCTATCCATCGAAG</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">GCTTGGTGGGCCGTTACCCCGCCAACAACCTAATGGAACGCATCCCCATCGATGACCGAA</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">GTTCTTTAATAGTTCTACCATGCGGAAGAACTATGCCATCGGGTATTAATCTTTCTTTCG</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">AAAGGCTATCCCCGAGTCATCGGCAGGTTGGATACGTGTTACTCACCCGTGCGCCGGTCG</span><br style="font-family:courier new,monospace"><span style="font-family:courier new,monospace">CCA</span></font></b><br><br>The
+ new FASTA IDs created by split_libraries are formatted to indicate the 
+sample name, followed by an underscore (_), and then a number.&nbsp; For
+ example, the sequences with IDs PC.634_1 and PC.634_2 both came from 
+the sample PC.634, and the numbers 1 and 2 are there to make sure that 
+each sequence still has a unique FASTA ID. This ID format: 
+SampleName_[number] is necessary for future steps in the pipeline, so 
+QIIME will know what samples the reads came from (Remember - we've 
+removed the barcodes and primers!).<br><br>To continue on with the analysis, we now have to cluster all those 1399 sequences into operational taxonomic units (OTUs)...<br><br><hr width="100%" size="2"><i>Next step: </i><a href="B.Picking_OTUs_and_Denoising.html"><b>Picking OTUs and Denoising</b></a><br><br></div></div></td></tr></tbody></table>
+</div> 
+
+
+</body></html>

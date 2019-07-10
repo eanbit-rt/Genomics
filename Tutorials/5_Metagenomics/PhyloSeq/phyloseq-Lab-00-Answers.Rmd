@@ -1,0 +1,385 @@
+---
+title: "phyloseq Section 01 - Import data into R and organize as phyloseq object"
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 10
+    theme: readable
+    toc: yes
+---
+
+```{r echo=FALSE}
+# knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+```
+
+
+## Goals for this section
+
+This is the first section of the phyloseq lab. 
+In this section you will learn
+how to import data from a common format
+and how to manipulate, investigate,
+and merge data together into a single "experiment-level" object.
+You will also learn how to save this object
+into a compressed and self-describing file,
+that you can easily and quickly
+load into a new R session without repeating
+the entire parsing and organizing process.
+
+### Create and save a phyloseq object
+
+The phyloseq object that you create and save in this section
+will be used in the next section;
+but don't worry!
+If you have trouble or don't finish
+a copy of the object we are trying to make in this tutorial
+is included with these materials,
+the file named:
+`r "mp-phyloseq-lab-00.RDS"`
+
+### Practice reading R package documentation
+
+A secondary goal of this section
+is for you to become familiar
+or even comfortable
+reading and using the documentation of R functions
+that accompanies every good R package.
+Don't give up too quickly!
+Every time you get stuck and start searching for an example
+you are practicing how to get around R on your own.
+Each of the functions we will use
+are well-documented,
+and the tutorial text provides each main function that you will use.
+
+### Answer Key
+
+In programming there are many ways to accomplish a task.
+I have provided an *answer key* in the form of
+a working example of code 
+that accomplishes the task being asked of you.
+If your version of the code does not match exactly,
+that is okay,
+yours is still correct as long as it works!
+Please try not to use the *answer key*
+until you have exhausted your other options,
+including an earnest attempt at exploring the 
+documentation of the functions mentioned in each prompt,
+as well as your own trial-and-error attempts
+to accomplish the task.
+
+
+---
+
+# Download QIIME tutorial data (Moving Pictures)
+
+## System command, `wget`, `tar`, etc.
+
+1. Locate the *Moving Pictures* tutorial compressed tarball (`.tgz`),
+or uncompressed file. Note this location or save the path as an object.
+If you do not have the relative path immediately available
+from the earlier QIIME lab, 
+you can download the lab to the current directory from the following link:
+`ftp://ftp.microbio.me/qiime/tutorial_files/moving_pictures_tutorial-1.9.0.tgz`
+Hint, you do not need to leave your R session to do this.
+R can initiate system commands (bash) using the `system()` function.
+So in this case:
+`system("wget ftp://ftp.microbio.me/qiime/tutorial_files/moving_pictures_tutorial-1.9.0.tgz")`
+2. Unzip this copressed directory archive with 
+`system("tar -xvzf moving_pictures_tutorial-1.9.0.tgz")`
+
+```{r}
+# Define paths
+dataDirectoryPath = "moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus"
+biomFile = "otu_table_mc2_w_tax_no_pynast_failures.biom"
+fullInputPath = file.path(dataDirectoryPath, biomFile)
+# Only attempt download if file not already present
+if( !file.exists(fullInputPath) ){
+  # Download to current directory
+  system("wget ftp://ftp.microbio.me/qiime/tutorial_files/moving_pictures_tutorial-1.9.0.tgz")
+  # Unzip
+  system("tar -xvzf moving_pictures_tutorial-1.9.0.tgz")
+}
+```
+
+
+## Find the biom file in the QIIME tutorial data
+
+There is a specific biom file we want to work with.
+The QIIME tutorial might have many.
+
+1. Locate the biom file `otu_table_mc2_w_tax_no_pynast_failures.biom`.
+Hint: use the autocomplete feature of system paths
+by typing the *tab* button when the cursor is within a pair of quotation marks.
+The path within the tutorial is:
+`moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus`
+2. Save this full or relative path as `fullInputPath`
+3. Check that the system recognizes existence of the file with `file.exists()`
+4. Check that file is the expected size with `file.info()`
+
+```{r}
+# Define paths
+dataDirectoryPath = "moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus"
+biomFile = "otu_table_mc2_w_tax_no_pynast_failures.biom"
+fullInputPath = file.path(dataDirectoryPath, biomFile)
+fullInputPath
+# Check for existence of biom file.
+file.exists(fullInputPath)
+file.info(fullInputPath)
+```
+
+
+---
+
+# Load Libraries, Import Data
+
+## Load phyloseq
+
+1. Load the *phyloseq*, *biomformat*, and *ggplot2* packages
+using the `library()` command.
+2. Check the version number of each package
+using the `packageVersion()` command.
+
+```{r}
+library("phyloseq"); packageVersion("phyloseq")
+library("biomformat"); packageVersion("biomformat")
+library("ggplot2"); packageVersion("ggplot2")
+```
+
+## Import Data
+
+### Import data from BIOM object
+
+We want to use a special import function 
+that is not yet fully integrated into phyloseq.
+This is to accomodate the new version of the biom format
+that is based on HDF5
+and has become the default output from QIIME.
+
+1. Import the biom file you located above
+using the `biomformat::read_biom()`,
+and save the result as an object named `biom1`.
+Make sure to specify the package with the `::` notation,
+because the older *biom* package
+also includes a `read_biom()` function.
+Save this data, the output of `biomformat::read_biom()` as `biom1`.
+(The phyloseq package will be migrating to *biomformat*
+in the next release.)
+2. phyloseq's current `import_biom()` function
+can already properly interpret `biom1`
+and convert it to proper phyloseq format.
+Save this, the output of `import_biom()` as `mp0`.
+3. Use the following command to keep only the first seven taxonomic ranks:
+`tax_table(mp0) <- tax_table(mp0)[, 1:7]`
+This is to fix a weird importing artifact.
+But now you know how to do it :-)
+4. Print the object to standard out
+using the `print()` function,
+or simply typing the object name and pressing enter.
+**What does it show you?**
+5. Explore the taxonomic ranks in this data
+using the `rank_names()` function.
+**What are the taxonomic ranks available in this data?**
+
+```{r}
+biom1 = biomformat::read_biom(biom_file = fullInputPath)
+names(biom1)
+# treefilename = treeFile1
+mp0 = import_biom(biom1, parseFunction = parse_taxonomy_greengenes)
+# Keep only the first 7 ranks
+tax_table(mp0) <- tax_table(mp0)[, 1:7]
+# Explore the data.
+rank_names(mp0)
+mp0
+```
+
+### Import sample data from mapping file
+
+1. See if you can locate the mapping file you used in the QIIME tutorial.
+2. If not, it should be in:
+`r "moving_pictures_tutorial-1.9.0/illumina/map.tsv"`
+
+3. Import the mapping file using the `import_qiime_sample_data()` function,
+and save this as an object named `qsd`.
+4. Combine your biom file and your sample data into one phyloseq object
+using the `merge_phyloseq()` function.
+5. Read out the sample variables that are now present in your object.
+
+```{r}
+qsd = import_qiime_sample_data("moving_pictures_tutorial-1.9.0/illumina/map.tsv")
+mp1 = merge_phyloseq(mp0, qsd)
+mp1
+sample_variables(mp1)
+```
+
+### Import phylogenetic tree
+
+Read phylogenetic tree. Add it to the data object.
+
+1. Find QIIME-output phylogenetic tree object.
+Hint: it is at `r "moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus/rep_set.tre"`.
+2. Define this path as a character string in object, `treeFile1`
+3. Use phyloseq's `read_tree()` function to import the tree. Save it as `tree1`.
+4. Add the tree to the previous phyloseq object,
+and save this new result as `mp2`. 
+Again, to do this you'll use `merge_phyloseq()` 
+with arguments `mp1` and `tree1`.
+
+```{r}
+treeFile1 = "moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus/rep_set.tre"
+tree1 = read_tree(treeFile1)
+tree1
+class(tree1)
+# Add to the data object
+mp2 = merge_phyloseq(mp1, tree1)
+mp2
+```
+
+
+### Import representative sequences
+
+The OTU centroids, often called the "representative sequences",
+is the set of sequences that represent 
+the center of an OTU in sequence space.
+There is one such sequence per OTU,
+and they are all different from one another.
+In principle they should be at least as dissimilar from one another
+as the OTU radius that you defined during OTU clustering.
+This is commonly 3% sequence dissimilarity,
+but this valuse is arbitrary,
+and you may select a different, smaller value in practce.
+
+1. Locate the representative sequences for this tutorial.
+If you're not sure where they are from the previous tutorial,
+the following is the relative path where they are
+in the original tutorial data structure:
+`moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus/rep_set.fna`.
+2. Import the representative sequences for this data,
+using the `Biostrings::readDNAStringSet()` function
+for reading fasta files,
+and save this *DNAStringSet* object as `bs1`.
+3. The names of each sequence have extra decorations
+beyond just the OTU ID. We need exact OTU ID matches
+in order to merge this data with your phyloseq object.
+The following code will accomplish this for you,
+by removing everything after the first space
+from the sequence ID:
+`names(bs1) <- gsub("\\s.+$", "", names(bs1))`
+4. Add `bs1` to your data object
+using the `merge_phyloseq()` function,
+and save the result as `mp3`.
+5. Check that your number of OTUs did not change
+using the `ntaxa()` function
+on the unmerged objects and on `mp3`.
+6. You can also check that the OTU names match
+ahead of attempting the merge
+by using the following structure:
+`intersect(taxa_names(object1), taxa_names(object2))`.
+Note that if there are many taxa,
+you might want to save the result of `intersect()`
+as an object and query it in pieces, or its `length()`,
+rather than fill up your terminal with OTU identifiers.
+
+```{r}
+repseqFile = "moving_pictures_tutorial-1.9.0/illumina/precomputed-output/otus/rep_set.fna"
+bs1 = Biostrings::readDNAStringSet(repseqFile)
+# Remove non-OTU information from sequence name
+names(bs1) <- gsub("\\s.+$", "", names(bs1))
+sum(names(bs1) %in% taxa_names(mp2))
+# Add to the data object
+mp3 = merge_phyloseq(mp2, bs1)
+mp3
+```
+
+
+# Save Data Object(s)
+
+You've got an object you want to use for later analysis
+(or many of them!); 
+AND it is well-organized and self-describing
+with a tree, sequences, taxonomy, sample data,
+and of course the counts of each OTU in each sample
+(OTU table).
+Before doing further analysis,
+let's end this session by saving our hard-earned object
+as a compressed, serialized R object.
+These objects
+
+1. Are usually very compact
+and use less file space than the original input files, and
+2. load into R very quickly, so that you don't need to re-parse the files
+every time you want to come back to an analysis,
+or section of an analysis.
+
+Save the file as `r "mp-phyloseq-lab.RDS"`,
+using the `saveRDS()` function.
+
+```{r}
+# Easier without loop
+saveRDS(mp2, "mp-phyloseq-lab.RDS")
+```
+
+### Advanced
+
+1. Write a single R command 
+that will save each of the intermediate files
+as separate RDS objects.
+Use the `mapply()` function to loop over
+two vectors vectors simultaneously, 
+one with the objects (a list) 
+and the other a character vector of the file names you will store.
+2. There is more than one way to do this, but
+using `mget()` and `paste0()` functions
+to store a *list* of the 4 `mp*` objects we created
+is a helpful fist step.
+
+```{r}
+# Define object names
+mpObjNames = paste0("mp", 0:3)
+# Define list of the different stages of our object build
+mpList = mget(mpObjNames)
+# Use mapply() function to loop over each object
+mapply("saveRDS",
+       mpList,
+       paste0("mp", 0:3, ".RDS"),
+       SIMPLIFY = TRUE)
+```
+
+### Note: save.image()
+
+If you want to store many objects as one file,
+or you want to store all the objects at the end of your session,
+then you may find that `save()` or `save.image()`
+to be easier to use than `saveRDS()`.
+The files are usually given the extension `.RData`
+instead of `.RDS`,
+and the reverse operation (loading the stored data into R session)
+is accomplished with the
+`load()` function, rather than `readRDS()`.
+
+Try for yourself!
+
+```{r, eval=FALSE}
+save(list = paste0("mp", 0:3), file = "myObjList.RData")
+```
+
+
+
+---
+
+# (Supplement) Basic Rmd Demo
+
+This is an R Markdown document (or the HTML result of one).
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. 
+For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r}
+plot(cars)
+```

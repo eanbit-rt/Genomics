@@ -1,0 +1,1 @@
+You can see that this sequencing experiment included nine samples: five controls (mouse gut microbiomes) and four experimental samples (mouse gut microbiomes from fasted mice).

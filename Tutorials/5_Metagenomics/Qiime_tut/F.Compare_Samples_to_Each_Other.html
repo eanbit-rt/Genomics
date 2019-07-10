@@ -1,0 +1,143 @@
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+          
+     </head>
+
+<body style="width: 90%">
+
+<a href="E.Alpha_Diversity.html">E. Alpha Diversity</a><i><br></i>
+<h2>F. Compare Samples to Each Other</h2>
+
+<br></div><div><b><span style="color:rgb(19,79,92)">Goals</span></b><br style="color:rgb(19,79,92)"><ul style="color:rgb(19,79,92)"><li>Set up a parameter file for a workflow script</li><li>Use a workflow script</li><li>Perform multiple rarefactions at an even depth</li><li>Calculate beta diversity metrics for between-sample comparisons</li><li>Visualize the results of beta diversity analysis</li></ul><p>Beta diversity is a term for the comparison of samples to each other. A beta diversity metric does <i>not</i> calculate a value for each sample. Rather, it calculates a <b>distance</b> between a <i>pair</i>
+ of samples. If you have many samples (in this tutorial we have nine 
+samples), a beta diversity metric will return a matrix of the distances 
+of all samples to all other samples. If you have experience in 
+phylogenetics, you may know that a distance matrix can be visualized as a
+ tree. Distance matrices can also be visualized as a graph of points, a 
+network, or any other creative method you can come up with. In this 
+tutorial, we'll use <b>principal coordinates analysis</b> to visualize distances between samples on an <i>x</i>-<i>y</i>-<i>z</i> plot.</p><p><b>Sequencing depth</b>
+ can have an effect on beta diversity analysis, just as it does on alpha
+ diversity. The effect of sequencing depth is not as easy to visualize, 
+and it depends a lot on what distance metric you chose. The safest bet 
+is always to chose a single sequencing depth that is less than the total
+ number of sequences in your smallest sample, and rarefy all your 
+samples at that same depth.&nbsp;&nbsp;</p><p>Before we get started, lets introduce another feature that will help us do complicated analyses with less time on our part.<br></p><h4><a name="TOC-Workflow-scripts-in-QIIME"></a>Workflow scripts in QIIME<br></h4><p>Up
+ until this point, we've been doing everything the long way, 
+step-by-step, to help you explore and understand how all the steps work 
+and fit together into an analysis pipeline. Now, it seems like a good 
+time to introduce some <i>shortcuts</i> to make your life easier! QIIME has some special built-in scripts that are categorized as <b>workflow scripts</b>.
+ These workflow scripts take an analysis that would normally be a long 
+series of steps, and performs all the steps in a series. All you have to
+ do, as a user, is run the one workflow script. For example, for our 
+previous section on <a href="E.Alpha_Diversity.html">alpha diversity</a>
+ analysis we had to run three different scripts in a series. There is 
+actually a workflow script that can do all these steps for us in one 
+command: <a href="http://qiime.org/scripts/alpha_rarefaction.html">alpha_rarefaction.py</a>. And, for our process [tutorial pages <a href="C.Taxonomy_and_the_OTU_Table.html"/>C</a> and <a href="D.Alignments_and_Trees.html">D</a>]
+ of picking OTUs, picking a reference set of sequences, assigning 
+taxonomy, building an OTU table, aligning our sequences, filtering the 
+alignment, and building a phylogenetic tree are all combined into 
+two workflow scripts called <a href="http://qiime.org/scripts/pick_open_reference_otus.html">pick_open_reference_otus</a> and <a href="http://qiime.org/scripts/pick_closed_reference_otus.html">pick_closed_reference_otus</a>
+. (Note that this workflow scripts does <i>not</i> do the denoising step, though. When you work with Illumina data you do not need the denoising step)<br></p>
+<p>We'll
+ discuss the two alternative workflows more in the next 
+section.&nbsp; For now, we'll start with the workflow script that helps 
+us with our task at hand: beta diversity analysis.&nbsp;</p><p><i>Note</i>:
+ &nbsp;Once you get more advanced in QIIME, you may want to set a lot of
+ custom options. Because of the complexity of a workflow script, many of
+ the options have to be set by supplying an input file called a <a href="http://qiime.org/documentation/qiime_parameters_files.html">parameters file</a>&nbsp;(with the -p option). You don't <i>need</i>&nbsp;a
+ parameters file, though. If one is not specified, all the steps of the 
+workflow will happen with relatively common default settings.<br></p><h4><a name="TOC-Jackknifed-beta-diversity-analysis"></a>Jackknifed beta diversity analysis<br></h4><p>We're going to use the workflow script <b><a href="http://qiime.org/scripts/jackknifed_beta_diversity.html">jackknifed_beta_diversity.py</a></b> to do our beta diversity analysis. This script does the following steps:</p><ol><li>Compute a beta diversity distance matrix from the full data set</li><li>Perform multiple rarefactions at a single depth</li><li>Compute distance matrices for all the rarefied OTU tables</li><li>Build UPGMA trees for all the rarefactions</li><li>Compare all the trees to get consensus and support values for branching</li><li>Perform principal coordinates analysis on all the rarefied distance matrices</li><li>Generate plots of the principal coordinates</li></ol><p><span style="background-color:transparent;line-height:1.5;font-size:10pt">Let's start this following script, and we'll talk about all the parts to the script while it's running:</span></p><p style="font-family:courier new,monospace;color:rgb(56,118,29)"><b>jackknifed_beta_diversity.py -i otu_table.biom -o jackknifed_beta_diversity/ -e 90 -m Fasting_Map.txt -t rep_set_tree.tre</b></p><p>Some of the options for <a href="http://qiime.org/scripts/jackknifed_beta_diversity.html">jackknifed_beta_diversity.py</a>:</p><p><span>&nbsp;&nbsp;&nbsp; </span>-i [file]&nbsp; The OTU table file</p><p><span>&nbsp;&nbsp;&nbsp; </span>-o [name]&nbsp; Choose a name for the output directory to be created</p><p><span>&nbsp;&nbsp;&nbsp; </span>-e [number]&nbsp; The depth for even rarefactions</p><p><span>&nbsp;&nbsp;&nbsp; </span>-m [file]&nbsp; The sample mapping file</p><p><span>&nbsp;&nbsp;&nbsp; </span>-t [file]&nbsp; The phylogenetic tree file</p><p>Lets start with the -e option for the rarefaction depth. This script performs rarefaction at <i>only one depth</i>.
+ The idea is that we want to create a large collection of distance 
+matrices that we can do statistics on. For this to work, we need to 
+choose a depth that is significantly smaller than the number of seqs in 
+the smallest sample. If any samples have fewer seqs than the rarefaction
+ depth, they will be left out!&nbsp; Also, if the rarefaction depth is 
+too high, then every rarefied OTU table will be the same, and there 
+won't be any differences between all our distance matrices.&nbsp; I 
+chose 90 seqs/sample as our depth, because most samples have a little 
+under 150 seqs/sample total. Going even lower may have been advisable, 
+perhaps to 75 seqs/sample or less, but this is a pretty small data set 
+to start with so I just made a compromise.&nbsp; <br></p><p>Let's go back and look at that parameters file... there are <i>lots</i>
+ of variables in there that you can set.&nbsp; You'll notice that most 
+of them are not set to anything. Also, many of them have nothing to do 
+with our jackknifed_beta_diversity.py workflow.&nbsp; That's okay.&nbsp;
+ The idea is that you can set up one parameters file for all your 
+workflows in a project, and any variables you leave blank in the 
+parameters file will just be set to their default values.</p><p>Okay, my
+ jackknifed_beta_diversity.py workflow is done; there are LOTS of new 
+files that it created in that jackknifed_beta_diversity/ folder!&nbsp; <br></p><div style="display:block;text-align:center;margin-right:auto;margin-left:auto"><img src="jbd_files.png" width="400" border="0" height="108"></a></div>There
+ is one sub-folder full of rarefied OTU tables, and three separate 
+sub-folders for each of the three different distance metrics we chose! 
+Let's look in the unweighted UniFrac folder. It contains a folder called
+ emperor_pcoa_plots and
+ in there is an html file named index.html. Double-click on this html 
+file to open it in your browser. It may take a minute, but you should 
+eventually see a Java application called Emperor that opens up, 
+displaying a graph like this:<div style="display:block;text-align:center;margin-right:auto;margin-left:auto"><img src="KingViewer.jpeg" width="400" border="0" height="331"></a></div>Those
+ are the results of our principal coordinates analysis! Each point 
+represents one of the samples. The important thing to realize here is 
+that the <i>axes are meaningless</i>. This is different from principal <i>components</i> analysis, which you may be more familiar with. If you do principal <i>components</i> analysis, you get out axes that have weighted components from <i>real variables</i> that went into the ordination. In principal <i>coordinates</i>
+ analyses, these axes were created to reproduce the distances between 
+samples, and we've lost the variables that the distances originally came
+ from.&nbsp; You'll notice that samples PC.634, PC.635, and PC.636 are 
+all really close to each other. Because the distances between samples 
+were calculated using unweighted UniFrac, this means that those three 
+samples have communities with very similar overall phylogenetic trees. 
+And, looking back into our mapping file (Fasting_Map.txt), we can see 
+that these three samples were all experimental samples (fasted mice 
+microbiomes)! <br><br><div style="display:inline;float:left;margin:5px 10px 0pt 0pt"><img src="SelectTreatmentInKING.jpeg" width="200" border="0" height="150"></a></div>How
+ can we visually look for patterns in this graph? In the upper right 
+corner of the Emperor viewer, you'll see a list of all the variables that 
+were in your mapping file. The variable you select will determine the 
+color scheme for the graph. Let's select the Treatment variable, and 
+we'll select the "unscaled" version for now (see inset image). (The 
+unscaled plot is squared off, while the scaled version would make the 
+higher inertia axes longer). It looks like there is definitely a 
+separation of the fasted mice microbiomes from the controls. Do you see 
+an image like the one below on your system?<br><br>
+<div style="display:block;text-align:center;margin-right:auto;margin-left:auto"><img src="Emperor_plot.jpeg" width="400" border="0" height="400">
+</div><p>Notice
+ that each data point consists of a central point, surrounded by a 
+semi-transparent cloud. The clouds represent the variation in UniFrac 
+results from all those rarefactions we did. This demonstrates that the 
+separation of these samples holds up to subsampling, which is a nice 
+thing to check. That means it isn't driven by one or two low abundance 
+singlets.&nbsp; If you drag the graph around with your mouse, it will 
+rotate in 3D (adding a third principal coordinate) - give it a 
+try!&nbsp;</p><p>There are a bunch of other scripts you can use to analyze these distance matrices.&nbsp; Let's try a few.&nbsp; <br></p><h4><a name="TOC-Distance-Statistics"></a>Distance Statistics</h4><p>Let's use the script <b><a href="http://qiime.org/scripts/dissimilarity_mtx_stats.html">dissimilarity_mtx_stats.py</a></b>
+ to calculate means and standard deviations for our unweighted unifrac 
+distance matrices. Remember that we created 100 distance matrices! I'm 
+going to set our output to a new folder that is closer to the root, so 
+we can access it more easily. It's important to chose descriptive names,
+ to you know later on which folders contain what kinds of data.</p><p style="font-family:courier new,monospace;color:rgb(56,118,29)"><b>dissimilarity_mtx_stats.py -i jackknifed_beta_diversity/unweighted_unifrac/rare_dm/ -o unweighted_unifrac_stats/</b></p><p>The input (-i) directory is the directory containing the <i>distance matrices</i> - this directory is named <b>rare_dm</b>,
+ and is located under the corresponding metric's folder.&nbsp; I named 
+our output directory "unweighted_unifrac_stats" so that, later on, I 
+will know what the data are in that directory.&nbsp; Notice that there 
+are three files in there: means.txt, medians.txt, and stdevs.txt.&nbsp; 
+If you wanted to know the mean and s.d. of the distance between two 
+samples, you could get those values from these matrices. In our 
+particular experiment, however, we have two categories, and several 
+samples in each category. What we'd really like to know is: are the 
+samples in an individual category closer to each other than they are to 
+samples outside the category?&nbsp; To test this question, QIIME has a 
+script called <b><a href="http://qiime.org/scripts/make_distance_boxplots.html">make_distance_boxplots.py</a></b> - let's run it on our "means.txt" distance matrix!</p>
+ 
+ <p style="font-family:courier new,monospace;color:rgb(56,118,29)"><b>make_distance_boxplots.py
+ -m Fasting_Map.txt -o distance_boxplots -d 
+unweighted_unifrac_stats/means.txt -f Treatment --save_raw_data</b></p>
+ 
+ <p>The <b>--save_raw_data</b> flag is nice; you may want to graph the data yourself.&nbsp; The result is something that looks like this:</p><div style="display:block;text-align:center;margin-right:auto;margin-left:auto"><img src="Treatment_Distances.png" width="298" border="0" height="400"></div><br><p>In
+ this case, there are only two Treatment categories, so the "Control vs 
+Fast" comparison is the same as the "All between Treatment" comparison. 
+There are more details and examples on how you can compare distances in <a href="http://qiime.org/tutorials/creating_distance_comparison_plots.html">this tutorial on qiime.org</a>. <br></p><p>Also,
+ if you're really interested in distances between samples, and you want 
+to compare different distance metrics to each other, you may be 
+interested in using QIIME to do <a href="http://qiime.org/tutorials/procrustes_analysis.html">Procrustes analysis</a>.</p><h4><a name="TOC-Okay-we-re-nearly-done-"></a>Okay, we're nearly done!<br></h4><p>We're
+ pretty much done here. You've now created all of the basic types of 
+files needed for more in-depth analysis. The best thing for you to do 
+now may be to explore all the <a href="http://qiime.org/scripts/">scripts in this list</a>, and see if there is anything else that takes your fancy.</p>
+<p>In the remaining section, we'll re-do all the initial processing steps in this tutorial, but this time we'll use the <b>workflow</b> scripts so you can see how to use those wonderful shortcuts.</p><hr width="100%" size="2"><i>Next: </i><b><a href="G.Recap.html">Recap</a></b><br><p><br></p></div></div></td></tr></tbody></table>
+</body></html>

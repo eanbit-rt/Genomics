@@ -1,0 +1,63 @@
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+          
+     </head>
+
+<body style="width: 90%">
+
+<a href="F.Compare_Samples_to_Each_Other.html">F. Compare Samples to Each Other</a><i><br></i>
+<h2>G. Recap: Workflows Make Things Easier</h2>
+
+<div><b><font color="#134f5c">Goals</font></b></div><div><ul><li><font color="#134f5c">Set up and execute an efficient QIIME workflow, from the start</font></li></ul></div><div>Okay,
+ now that you've seen all the steps to a 16S rRNA gene amplicon 
+pipeline, lets put it all together into a workflow. &nbsp;Specifically, 
+we're going to incorporate the pick_de_novo_otus.py workflow 
+to do most of those tutorial steps all in one go. <br><br><a href="QIIME_ExamplePipeline.pdf">Here is a PDF</a>
+ flowchart of a typical analysis pipeline for 454 pyrosequencing of 16S 
+rRNA genes. There are lots of alternative ways to go and additional 
+analyses you could do, however, depending on your questions!<br></div><div><br></div><div>Let's start again, this time using workflow scripts to help things go faster. We <i>still</i>&nbsp;have
+ to split libraries and denoise -- those steps are not part of the 
+workflow script. So, remember -- you've already done these three initial
+ steps:<div><br></div><div>#<i>&nbsp;Split libraries:&nbsp;<a href="http://qiime.org/scripts/split_libraries.html">http://qiime.org/scripts/split_libraries.html</a></i></div><div><b style="font-family:courier new,monospace;color:rgb(56,118,29)">split_libraries.py -m Fasting_Map.txt -f Fasting_Example.fna -q Fasting_Example.qual -o split_library_output</b><b style="font-family:courier new,monospace;color:rgb(56,118,29)">/</b></div><div><font size="2" color="#38761d" face="'courier new', monospace"><b><br></b></font></div><div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i># Denoise:&nbsp;<a href="http://qiime.org/scripts/denoise_wrapper.html">http://qiime.org/scripts/denoise_wrapper.html</a></i></span></font></div><div><b><font style="font-family:courier new,monospace;color:rgb(56,118,29)" size="2"><b>denoise_wrapper.py -i Fasting_Example.sff.txt -f split_library_output/seqs.fna -m Fasting_Map.txt -o denoiser/</b></font></b></div><div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i><br></i></span></font></div><div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i># Inflate denoiser output:&nbsp;<a href="http://qiime.org/scripts/inflate_denoiser_output.html">http://qiime.org/scripts/inflate_denoiser_output.html</a></i></span></font></div><div><b style="color:rgb(56,118,29)"><span style="font-family:courier new,monospace">inflate_denoiser_output.py
+ -c denoiser/centroids.fasta -s denoiser/singletons.fasta -f 
+split_library_output/seqs.fna -d denoiser/denoiser_mapping.txt -o 
+inflated_denoised_seqs.fna</span></b></div><br>Because you've already 
+run those three commands, we have the results files, and there's no need
+ to do it again for this data set. I'm also assuming you still have that
+ <a href="qiime_parameters.txt">qiime_parameters.txt</a>
+ file with you in the ~/qiime_tutorial/ directory. Now, let's run the 
+OTU table workflow.  It doesn't need much as input: just the 
+inflated_denoised_seqs.fna file that you created from the inflate 
+denoiser output process.<div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i><br></i></span></font></div><div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i># OTU Table WORKFLOW: <a href="http://qiime.org/scripts/pick_de_novo_otus.html">http://qiime.org/scripts/pick_de_novo_otus.html</a></i></span></font></div><div><font size="2" color="#38761d" face="'courier new', monospace"><span style="background-color:rgb(255,255,255)"><b>pick_de_novo_otus.py -i inflated_denoised_seqs.fna -p qiime_parameters.txt -o PickOTUsWorkflow/</b></span></font></div></div><div><font size="2" face="arial, sans-serif"><span style="background-color:rgb(255,255,255)"><i><br></i></span></font></div>I've
+ set the output directory to be called PickOTUsWorkflow/. Look in that 
+directory and you'll find a whole bunch of files that should look very 
+familiar. Alignments, a tree, an OTU table, taxonomy information, the 
+whole nine yards. Awesome! <br><br>Before you start analyzing your own 
+sequences, look closely at all those variables in the 
+qiime_parameters.txt file. You may want to tweak them!  For example, if 
+you want to set up your own taxonomy training set, perhaps based on the 
+Greengenes OTUs, there are a couple of variables that will need to be 
+set for that. Or, if you want to use a different alignment method, tree 
+building method, etc, it will all be controlled through giving values to
+ the variables in that parameters file. Good luck!<br><br>
+ There is another QIIME script, core_diversity_analyses.py that is a workflow for running a core set of QIIME diversity analyses. This script plugs several QIIME diversity analyses together to form a basic workflow beginning with a BIOM table, mapping file, and optional phylogenetic tree.
+<br><br>
+The included scripts are those run by the workflow scripts alpha_rarefaction.py, beta_diversity_through_plots.py, summarize_taxa_through_plots.py, plus the (non-workflow) scripts make_distance_boxplots.py, compare_alpha_diversity.py, and group_significance.py. To update parameters to the workflow scripts, you should pass the same parameters file that you would pass if calling the workflow script directly.
+<br><br>
+Additionally, a table summary is generated by running the ‘biom summarize-table’ command (part of the biom-format package). To update parameters to this command, your parameters file should use ‘biom-summarize-table’ (without quotes) as the script name. See http://qiime.org/documentation/qiime_parameters_files.html for more details.
+ <br><br>
+ We wil use the output in the folder PickOTUsWorkflow/ as input for the script core_diversity_analyses.py with categorical analyses focusing on the Treatment category as specified in the mapping file Fasting_Map.txt.
+ <br><br>
+ <b style="font-family:courier new,monospace;color:rgb(56,118,29)">core_diversity_analyses.py -i PickOTUsWorkflow/otu_table.biom -o core_output -m Fasting_Map.txt -c Treatment -t rep_set_tree.tre -e 20 </b>
+ <br><br>
+ Results from this analysis is in the folder core_output and the file idex.html can be opened in your web browser. Example of the output is shown below. <br><br>
+ <img src="core_analysis.jpeg" width="600" border="0" height="800">
+ 
+ 
+ </div></td></tr></tbody></table>
+</div> 
+</div> 
+</body></html>

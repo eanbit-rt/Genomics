@@ -1,0 +1,72 @@
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+          
+     </head>
+
+<body style="width: 90%">
+
+<a href="D.Alignments_and_Trees.html">D. Alignments and Trees</a><i><br></i>
+<h2>E. Alpha Diversity</h2>
+
+<div style="font-weight:bold"><b><br></b></div><b><font color="#134f5c">Goals</font></b><div><ul><li><font color="#134f5c">Perform multiple rarefactions at different depths</font></li><li><font color="#134f5c">Analyze alpha diversity of individual samples</font></li></ul><div>In this step we'll look into alpha diversity - a measure of species richness or diversity within an individual sample.&nbsp;</div></div><h4><a name="TOC-Perform-Multiple-Rarefactions"></a>Perform Multiple Rarefactions</h4><div>You may think of diversity, or species richness, as "the number of species" that are present in the system. That <i>is</i>
+ the general definition of diversity. However, the deeper you sequence, 
+the more species you will find. That is problematic, especially if you 
+gathered 500 reads from one sample and only 100 reads from another 
+sample. You would expect to find more species if you sequenced 5x as 
+many reads! To account for this, we perform an <i>in-silico</i> (i.e., on your computer) experiment called <b>rarefaction</b>.
+ A rarefaction is a random collection of sequences from a sample, with a
+ specified depth (number of sequences). For example, a rarefaction with a
+ depth of 75 reads per sample is a simulation of what your sequencing 
+results would look like if you sequenced exactly 75 reads from each 
+sample. To look at alpha diversity systematically, we can perform many 
+rarefactions: at multiple depths and repeat many times at each depth. In
+ QIIME, this task is performed on your OTU table. The QIIME script 
+multiple_rarefactions.py takes your OTU table and makes a folder full of
+ many OTU tables, all of which are repeats of rarefactions at specific 
+depths. Let's use <a href="http://qiime.org/scripts/multiple_rarefactions.html"><b>multiple_rarefactions.py</b></a> as follows:<br></div><div><br></div><div><b><font color="#38761d" face="'courier new', monospace">multiple_rarefactions.py -i otu_table.biom -m 20 -x 100 -s 20 -n 10 -o rare_20-100/</font></b></div><div><br></div><div>Some options for multiple_rarefactions.py:</div><div><span>&nbsp;&nbsp;&nbsp; </span>-i [file]&nbsp; The input OTU table file<br><span>&nbsp;&nbsp;&nbsp; </span>-m [number]&nbsp; The lowest rarefaction depth in the series of depths<br><span>&nbsp;&nbsp;&nbsp; </span>-x [number]&nbsp; The highest rarefaction depth in the series of depths<br><span>&nbsp;&nbsp;&nbsp; </span>-s [number]&nbsp; The step size to increment from the low to high depths<br><span>&nbsp;&nbsp;&nbsp; </span>-n [number]&nbsp; The number of replicates to perform at each depth<br><span>&nbsp;&nbsp;&nbsp; </span>-0 [name]&nbsp;&nbsp; The name of the new directory to be created<br><br>From
+ that command above, you can see that we are performing rarefactions 
+starting at 20 seqs/sample, and stepping up to 100 seqs/sample in 
+increments of 20.&nbsp; In other words, we'll perform rarefactions at 
+20, 40, 60, 80, and 100 seqs/sample. The <b>-n</b> option specifies that
+ we'll do 10 replicates at each of those depths. It is important to 
+chose the rarefaction depths based on how many total sequences per 
+sample you have.&nbsp; For example, it would <i>not</i> make sense to do
+ rarefactions from 20 to 100 seqs/sample if I had a larger data set with
+ an average of 5000 seqs/sample. If I did that, I would be throwing out a
+ lot of my data and statistical power!<br><br>Run the command, and it will make that directory named <b>rare_20-100/</b>.&nbsp; If you look inside that new directory with <i>ls</i>,
+ you will see that we've created 50 new files. Each of those files is a 
+new OTU table with all the samples rarefied at the specified level! 
+We're going to look at alpha diversity in those <b>rarefied</b> OTU tables, <b>not</b> in our original OTU table.<br></div><h4><a name="TOC-Calculate-Alpha-Diversity"></a>Calculate Alpha Diversity</h4><div>There
+ are many measures of alpha diversity.&nbsp; Depending on your 
+ecological allegiances, you may have a preference for Chao1, <a href="http://en.wikipedia.org/wiki/Diversity_index#Simpson_index">Simpson's Diversity</a>, <a href="http://en.wikipedia.org/wiki/Diversity_index#Shannon_index">Shannon Index</a>,
+ etc. These all measure different things, so it's important to think 
+about what is most meaningful for your experiment, and your question. 
+The QIIME script for calculating alpha diversity in samples is called <a href="http://qiime.org/scripts/alpha_diversity.html"><b>alpha_diversity.py</b></a>.&nbsp;
+ There are many options for what metrics to use, and you can chose to 
+run a bunch of metrics all at once if you like. All the possible alpha 
+diversity metrics available in QIIME are listed <a href="http://qiime.org/scripts/alpha_diversity_metrics.html">here</a>.<br></div><div><br></div><div><b><font color="#38761d" face="'courier new', monospace">alpha_diversity.py -i rare_20-100/ -o alpha_rare/ -t rep_set_tree.tre -m observed_species,chao1,PD_whole_tree</font></b></div><div><br></div><div>Some options:<br><span>&nbsp;&nbsp;&nbsp; </span>-i [directory]&nbsp; The name of the directory containing rarefied OTU tables<br><span>&nbsp;&nbsp;&nbsp; </span>-o [name]&nbsp; The name of the directory to create for output<br><span>&nbsp;&nbsp;&nbsp; </span>-t [file]&nbsp; The file for your phylogenetic tree<br><span>&nbsp;&nbsp;&nbsp; </span>-m [list]&nbsp; The list of metrics, separated with commas and <b>no spaces</b><br><br>If
+ you run the above command, it will calculate alpha diversity metrics 
+for all of your rarefied OTU tables and place the results in a new 
+directory called alpha_rare.&nbsp; The metric PD_whole_tree is Faith's 
+Phylogenetic Diversity, and it is based on the phylogenetic tree. 
+Basically, it adds up all the branch lengths as a measure of diversity. 
+So, if you find a new OTU and it's closely related to another OTU in the
+ sample, it will be a small increase in diversity. However, if you find a
+ new OTU and it comes from a totally different lineage than anything 
+else in the sample, it will contribute a lot to increasing the 
+diversity. <br><br>There are still a ton of separate files, and we need 
+to "collate" them together into a nice, neat collection of results that 
+are easy to graph.<br></div><div><br></div><h4><a name="TOC-Summarize-the-Alpha-Diversity-Data"></a>Summarize the Alpha Diversity Data</h4><div>The QIIME script <a href="http://qiime.org/scripts/collate_alpha.html">collate_alpha.py</a> takes the output directory from alpha_diversity.py as its input, and creates a <i>new</i> output directory containing files that are much easier to look at in a spreadsheet.<br></div><div><br></div><div><b><font color="#38761d" face="'courier new', monospace">collate_alpha.py -i alpha_rare/ -o alpha_collated/</font></b></div><div><br></div><div>Take a look at the new files in the <b>alpha_collated/</b>
+ folder-- they are each organized quite nicely for spreadsheet 
+analysis.&nbsp; The observed_species and chao1 metrics don't seem to 
+show us much in this particular experiment, but check out the data in 
+PD_whole_tree.txt (graphed below).<br><br><div style="display:block;text-align:left"><a href="Faith'sPhylogeneticDiversity.jpeg" imageanchor="1"><img src="Faith'sPhylogeneticDiversity.jpeg" width="500" border="0" height="400"></a></div>It
+ looks like the fasted samples had a higher phylogenetic diversity than 
+the control mice microbiomes. I made this graph in the Excell 
+spreadsheet program, by importing the <b>alpha_collated/PD_whole_tree.txt</b> file.&nbsp; The diversity, however, depends <i>very</i>
+ strongly on sequencing depth. That reinforces the fact that you need to
+ perform rarefactions if you're comparing diversity between samples.<br>You can download and open the file <a href="Faith'sPhylogeneticDiversity.xls">here.</a></div><div><br></div><div><hr><i>Next step</i>: <a href="F.Compare_Samples_to_Each_Other.html"><b>Beta Diversity (Comparing Samples to Each Other)</b></a></div><div><br></div></div></td></tr></tbody></table>
+</body></html>

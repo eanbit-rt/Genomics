@@ -1,0 +1,853 @@
+---
+title: "phyloseq Section 02 - Explore microbiome data"
+date: "`r Sys.time()`"
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 10
+    theme: readable
+    toc: yes
+---
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+```
+
+---
+
+# Load Packages, Import Data
+
+There thousands of publicly available R extensions, AKA "packages". 
+They are not all installed on your system, 
+and only core R packages are loaded when you start a new R session.
+The `library()` function is used to load non-core packages
+so that subsequent commands are searched against
+the functions and data in these packages as well as the core.
+
+I like to also show the package version number in my Rmd workflows
+(using `packageVersion()`)
+so that I know what was used at the time the code was executed.
+
+I also like to include a date stamp.
+There's one above, but here's how you can include it in your code:
+
+`gsub("[[:punct:][:space:]]", "-", Sys.time())`
+
+```{r}
+gsub("[[:punct:][:space:]]", "-", Sys.time())
+```
+
+## Load phyloseq and other packages
+
+1. Load the *phyloseq*, *data.table*, and *ggplot2*, packages
+using the `library()` command.
+2. Check the version number of each package
+using the `packageVersion()` command.
+
+
+```{r}
+library("phyloseq"); packageVersion("phyloseq")
+library("data.table"); packageVersion("data.table")
+library("ggplot2"); packageVersion("ggplot2")
+```
+
+## Load Pre-Organized Data from Previous Section
+
+In the previous section
+you organized our *Moving Pictures* example data
+using phyloseq tools,
+and then saved this data from your R session (system memory, RAM) 
+to the hard disk as a compressed, serialized file (extension "`.RDS`").
+This is a handy way to store complicated single data objects
+for later use, without needing to define and document one or more file formats.
+This data was imported from 3 or 4 QIIME output files in various locations,
+but now this one self-describing file is all you need.
+
+1. Load your *Moving Pictures* RDS data file into your R session
+using the `readRDS()` function,
+and store the result as an object named `mp`.
+
+```{r}
+mp = readRDS("mp-phyloseq-lab.RDS")
+```
+
+Reminder: For storing many objects from an R session at once,
+try `save()` or `save.image()`, and `load()`.
+
+
+---
+
+# Initial exploration of data
+
+Explore the data.
+Executing a command in the terminal that is just a data object
+invokes the `print()` or `summary()` functions,
+which usually give summary details about the data
+if it is a complex object (like ours),
+or show the data directly if it is simple.
+If it is simple but large, you might hit the streaming limits in your console, 
+so try and check sizes first.
+The "Environment" box in your RStudio console usually tells you these details as well.
+
+1. "print" to screen the `mp` object
+2. This will give you other details about the object,
+as well as a few key functions that can be used to access parts of it.
+This data is too large to show all in the console, 
+with the exception of `phy_tree()` and `refseq()`,
+which have their own special print summary functions.
+
+1. Print `mp` to the screen.
+2. Get the number of samples and number of taxa (OTUs) directly,
+using the `nsamples()` and `ntaxa()` functions.
+3. The `sample_data` and `tax_table` components of this phyloseq object
+have their own special variables,
+namely `sample_variables()` and `rank_names()`.
+Use these functions on `mp`.
+What do you get?
+What does it mean?
+4. Find details about the phylogenetic tree in this data
+using the `phy_tree()` function.
+What is it telling you?
+How many leaves are in the tree?
+How many internal nodes?
+5. You could attempt to plot this tree
+with the default `plot()` function,
+but it has way too many leaves to be legible. 
+Also, the default plot function
+is limited, so we'll come back to this
+and how to use the phyloseq function `plot_tree()` later on.
+
+```{r}
+mp
+nsamples(mp)
+ntaxa(mp)
+sample_variables(mp)
+rank_names(mp)
+```
+
+## Summarize sequencing depths, in general and by category
+
+Create histograms that summarize sequencing depth in this data.
+Start with overall, but then also create category-specific histograms
+to help evaluate the balance in this experiment.
+
+For this we are going to use the ggplot2 package.
+
+1. Define a data.frame or data.table that contains
+the total number of reads per sample
+using the `sample_sums()` function,
+and the `geom_histogram()` geometric object from ggplot2.
+2. Separate these histograms by SampleType in separate plot panels
+using the `facet_wrap()` or `facet_grid()` functions.
+3. Add an informative title
+using the `ggtitle()` function.
+4. Modify the axis labels
+using the `xlab()` and `ylab()` functions.
+5. Make a grid of panels by `SampleType` and `Subject`
+using the `facet_grid()` function.
+Does it look like there are any imbalances
+in total counts or number of samples
+among these critical groups?
+
+
+```{r}
+sdt = data.table(as(sample_data(mp), "data.frame"),
+                 TotalReads = sample_sums(mp), keep.rownames = TRUE)
+setnames(sdt, "rn", "SampleID")
+pSeqDepth = ggplot(sdt, aes(TotalReads)) + geom_histogram() + ggtitle("Sequencing Depth")
+pSeqDepth
+pSeqDepth + facet_wrap(~SampleType)
+pSeqDepth + 
+  facet_grid(SampleType ~ Subject) + 
+  ggtitle("Seq. Depth by Subject and Body Site")
+```
+
+The lowest number of reads per sample was `r sdt[, min(TotalReads)]`.
+That is low for typical new projects, 
+but not that unusual compared to the rest of the samples in this tutorial dataset.
+From these plots, 
+I don't recommend filtering any samples based on depth alone,
+but keep in mind that in some cases you might,
+mainly when the number of read counts in a sample is so low
+that it is apparent that something went wrong with that sample.
+We will keep an eye out for artifacts 
+and odd behavior (outliers) as we go along.
+
+The plots above also do not indicate strong biases 
+in sequencing depth by group or subject.
+Do you agree?
+
+## Sequencing depth across time
+
+Here we want to check for 
+any associations with sequencing depth and time.
+This is worthwhile to check early on in an experiment,
+as metadata variables like sequencing depth
+should be uncorrelated with key experimental variables.
+**Why is that?**
+**What would it mean if there was a strong correlation between depth and variable?**
+
+1. Create a ggplot graphic in which
+the horizontal axis is mapped to `DaysSinceExperimentStart`, 
+the vertical axis is mapped to `TotalReads`, 
+and the color variable is mapped to `Subject`.
+2. Make this a scatter plot
+using the `geom_point()` function.
+3. Add a title the same way you did in the previous graphic.
+Label the graphic `r "Sequencing Depth vs. Time"`.
+4. Scale the vertical axis to base-10 logarithm
+using the `scale_y_log10()` layer function.
+**Does this improve the plot?**
+5. What is the minimum number of reads for any sample?
+(That is, what is the smallest library size?).
+**Does this seem like a problem? Would you remove any samples?**
+
+Note that you should enter Subject as `as.factor(Subject)`
+to let ggplot2 know that this is really a discrete variable,
+even though it is encoded as a numeric vector of `1` and `2`.
+Alternatively you could modify the `Subject` variable to be a character or factor,
+or you could add a new variable that holds `Subject` with a discrete data type;
+however, I prefer to not modify the original data
+unless necessary or useful,
+and the `as.factor()` expression is an elegant option in this case.
+**Why might it be a good idea to avoid modifying key variables in the data?**
+
+```{r}
+ggplot(sdt, aes(DaysSinceExperimentStart, TotalReads, color = as.factor(Subject))) + 
+  geom_point(size = 5) + 
+  geom_smooth(method = lm) +
+  ggtitle("Sequencing Depth vs. Time") +
+  scale_y_log10() +
+  facet_grid(SampleType ~ .)
+sdt[, min(TotalReads)]
+```
+
+
+---
+
+# Filter Taxa
+
+Filtering rare taxa is usually a necessary step in this type of data.
+We will actually perform the filtering elsewhere. 
+For now, just explore the distribution of taxa across the dataset.
+There are two obvious measures to consider right away:
+(1) **prevalence** - the number of samples in which a taxa appears, and
+(2) **total counts** - the total number (or proportion) of observations 
+of a taxa across all samples.
+
+I like to plot them together on the same plot, as well as histograms of each.
+This will help determine what appears to be 
+reasonable thresholds that define
+"unreasonably high" or "unhelpfully low" presence
+of a taxa in the data. 
+Note the subjectivity in this last statement.
+**Filtering is often subjective**.
+We can be honest about that. 
+Our goal is to both justify and document our decision for filtering.
+The goal of filtering is to remove *noise* from the data,
+in this case *noisy variables*
+that are unlikely to provide any useful information.
+Our criteria for this filtering
+**should not include variables from which we want to infer biological insights later on. Why is that?**
+
+## Taxa total counts histogram
+
+1. How many singleton taxa are there
+(OTUs that occur in just one sample, one time)?
+2. How many doubletons are there (OTU that occurs just twice)?
+3. Create a histogram of the total counts of each OTU.
+4. Calculate the cumulative sum
+of OTUs that would be filtered
+at every possible value of such a threshold,
+from zero to the most-observed OTU.
+*This one is tricky. Feel free to glance at the answers. I used some data.table magic to make this easier*
+5. Plot the cumulative sum of OTUs
+against the total counts
+using ggplot2 commands
+to make a scatter plot,
+and save this object as `pCumSum`,
+then "print" it to the terminal to render a graphic.
+**What behavior do you see in the data?**
+**Are most of the OTUs in the table rare?**
+**Where would you set the threshold?**
+6. To help clarify, zoom-in on the region
+between zero and 100 total counts,
+by "adding" the following layer to `pCumSum`:
+`pCumSum + xlim(0, 100)`
+**Now where would you set the threshold?**
+
+```{r}
+tdt = data.table(tax_table(mp),
+                 TotalCounts = taxa_sums(mp),
+                 OTU = taxa_names(mp))
+ggplot(tdt, aes(TotalCounts)) + 
+  geom_histogram() + 
+  ggtitle("Histogram of Total Counts")
+# How many singletons?
+tdt[(TotalCounts <= 0), .N]
+tdt[(TotalCounts <= 1), .N]
+# None. This data has been filtered already. 
+# How many doubletons?
+tdt[(TotalCounts <= 2), .N]
+# taxa cumulative sum
+taxcumsum = tdt[, .N, by = TotalCounts]
+setkey(taxcumsum, TotalCounts)
+taxcumsum[, CumSum := cumsum(N)]
+# Define the plot
+pCumSum = ggplot(taxcumsum, aes(TotalCounts, CumSum)) + 
+  geom_point() +
+  xlab("Filtering Threshold, Minimum Total Counts") +
+  ylab("OTUs Filtered") +
+  ggtitle("OTUs that would be filtered vs. the minimum count threshold")
+pCumSum
+# Zoom-in
+pCumSum + xlim(0, 100)
+```
+
+
+## Taxa prevalence histogram, and fast_melt()
+
+I've included a special function with the course materials,
+called `fast_melt()`, that I like.
+It is not yet incorporated into the phyloseq package.
+You can make it available to your session by "sourcing"
+the R code file that defines it. Use:
+
+```
+source("taxa_summary.R", local = TRUE)
+```
+
+In fact, now that you've done that,
+run the following code:
+
+```
+mdt = fast_melt(mp)
+prevdt = mdt[, list(Prevalence = sum(count > 0), 
+                    TotalCounts = sum(count)),
+             by = TaxaID]
+```
+
+If you've used the `data.table` package before
+you might guess what this does. 
+Briefly, the `fast_melt()` function
+"melts" the OTU table into a *long* format
+with three main columns:
+`SampleID`, `TaxaID`, and `count`.
+This allows us to do some additional data.table magic.
+For the rest of this section,
+go ahead and peak at the answers and come back
+(try not to peak ahead!).
+
+I define *Prevalence* here as
+the number of times an OTU is observed at least once.
+That is, it is the number of samples
+in which each OTU was non-zero.
+I find this to be a more useful
+filtering and diagnostic criteria.
+
+1. What is the plot showing?
+2. Why might prevalence be a useful filtering criteria?
+3. Where would you set a prevalence threshold?
+
+
+```{r}
+# Source the file that defines the new functions
+source("taxa_summary.R", local = TRUE)
+mdt = fast_melt(mp)
+prevdt = mdt[, list(Prevalence = sum(count > 0), 
+                    TotalCounts = sum(count)),
+             by = TaxaID]
+ggplot(prevdt, aes(Prevalence)) + 
+  geom_histogram() + 
+  ggtitle("Histogram of Taxa Prevalence")
+# How many singletons?
+prevdt[(Prevalence <= 0), .N]
+prevdt[(Prevalence <= 1), .N]
+# None. This data has been filtered already. 
+# How many doubletons?
+prevdt[(Prevalence <= 2), .N]
+# taxa cumulative sum
+prevcumsum = prevdt[, .N, by = Prevalence]
+setkey(prevcumsum, Prevalence)
+prevcumsum[, CumSum := cumsum(N)]
+pPrevCumSum = ggplot(prevcumsum, aes(Prevalence, CumSum)) + 
+  geom_point() +
+  xlab("Filtering Threshold, Prevalence") +
+  ylab("OTUs Filtered") +
+  ggtitle("OTUs that would be filtered vs. the minimum count threshold")
+pPrevCumSum
+```
+
+## Prevalence vs. Total Count Scatter plot
+
+1. Make sure you executed the code (you peeked!)
+from the **answers** that defines `prevdt`.
+2. Now use ggplot2 and `prevdt` to plot
+TotalCounts versus Prevalence
+as a scatter plot.
+3. Does this help you decide on a filtering threshold?
+
+```{r}
+ggplot(prevdt, aes(Prevalence, TotalCounts)) + 
+  geom_point(size = 4, alpha = 0.75) + 
+  scale_y_log10()
+```
+
+### **Extra Credit**
+
+1. Subset to the most abundant 9 phyla, 
+and map these to color in a ggplot2 scatter plot.
+
+```{r}
+addPhylum = unique(copy(mdt[, list(TaxaID, Phylum)]))
+# Join by TaxaID
+setkey(prevdt, TaxaID)
+setkey(addPhylum, TaxaID)
+prevdt <- addPhylum[prevdt]
+showPhyla = prevdt[, sum(TotalCounts), by = Phylum][order(-V1)][1:9]$Phylum
+setkey(prevdt, Phylum)
+ggplot(prevdt[showPhyla], 
+       mapping = aes(Prevalence, TotalCounts, color = Phylum)) + 
+  geom_point(size = 4, alpha = 0.75) + 
+  scale_y_log10()
+```
+
+
+## Select, Document Filtering Criteria
+
+After exploring these plots, 
+select your own filtering critera.
+Document it in your Rmd 
+by storing it as an informatively-titled variable.
+We will use it later on.
+
+
+---
+
+# Tree Plot
+
+There are `ntaxa(mp)` OTUs in the unmodified data.
+This is too many to reasonably attempt to plot on a tree,
+but we can agglomerate nearby positions on the tree
+as a means to simplify without losing too much information.
+
+Use the `tip_glom` function to accomplish this, 
+then use `plot_tree` to explore the dataset from
+the point of view of an evolutionary tree.
+Depending on the speed of the instance you're currently using, 
+you may want to first apply one of the filters you defined in the previous section.
+
+```{r}
+keepTaxa = prevdt[(Prevalence >= 10 & TotalCounts > 3), TaxaID]
+mpf1 = prune_taxa(keepTaxa, mp)
+tipg = tip_glom(mpf1, h = 0.05)
+# Transform to relative abundance
+tipg <- transform_sample_counts(tipg, function(x) x / sum(x))
+ntaxa(tipg)
+plot_tree(tipg, size = "Abundance",
+          color = "SampleType",
+          justify = "yes please", 
+          ladderize = "left") +
+  scale_size_continuous(range = c(1, 3))
+```
+
+### **Extra Credit** - Add useful taxonomic annotations 
+
+Add useful taxonomic annotations to this plot 
+to help clarify which regions appear to be
+over- or under-represented in particular sample groups.
+
+
+---
+
+# Alpha Diversity
+
+Before filtering,
+let's explore alpha diversity, 
+another aspect of our data
+that is often mentioned in the literature.
+I find the best way to explore this is by plotting,
+and phyloseq provides a convenient function
+for plotting alpha diversity measures
+and organizing these plots according to sample variables.
+
+1. Use the `plot_richness()` function
+to create an alpha diversity graphic.
+The output is a ggplot2 object.
+Include *Observed*, *Chao-1*, *Shannon*, and *Inverse Simpson*
+as the `measures` to include.
+You'll need to read the documentation 
+on the `measures` argument in the function
+to decide how to encode it.
+Also include `"ReportedAntibioticUsage"` as the `shape` argument,
+and `"SampleType"` as the `color` argument.
+Note that with phyloseq `plot_` commands,
+the variable names must be provided with quotations.
+Save this object as `pAlpha`, but also print it to screen.
+2. Now print it to screen again after increasing the point sizes
+from the default value with:
+`pAlpha + geom_point(size = 5)`
+
+```{r}
+pAlpha = plot_richness(mp,
+                       shape = "ReportedAntibioticUsage",
+                       color = "SampleType",
+                       measures = c("Observed", "Chao1", "Shannon", "InvSimpson"),
+                       title = "Alpha Diveristy, Moving Pictures Data")
+pAlpha + geom_point(size = 5)
+```
+
+The other reason we saved teh ggplot2 object in this case
+is because it also includes the data for the plot
+in an R "data.frame" within the object.
+This is true of most ggplot2 objects,
+and so a useful tool for building custom graphics.
+We will use this in the next section.
+
+
+## Custom Alpha Diversity Graphic
+
+Make a custom ggplot2 graphic from scratch using this same data.
+The ggplot object you just created with the previous function
+already has the data embedded in it and organized in a nice way for plotting.
+It is stored in `pAlpha$data`. 
+The `value` column in this table 
+contains the alpha diversity measure values,
+while the `variable` column contains the alpha measure type.
+
+1. Save this as a new object with a new name.
+For instance, `alphadt`.
+2. Subset to just the Shannon index in this data.
+3. Order the data by `DaysSinceExperimentStart`
+4. Create a scatter plot in which 
+the horizontal axis is mapped to `DaysSinceExperimentStart`,
+the vertical axis mapped to alpha diversity (`value`),
+and color is mapped to `SampleType`.
+5. Add a second `geom_point()` layer
+that is larger than the first,
+and highlights just the samples
+for which antibiotic usage was reported
+e.g. `ReportedAntibioticUsage == "Yes"`.
+Note that each geom layer can take its own custom data
+rather than use the default data
+defined in the `ggplot()` initiation of the plot.
+The syntax for this might look something like
+` + geom_point(data = alphadt[(ReportedAntibioticUsage == "Yes")])`,
+where `alphadt` is my alpha diversity data.table.
+Your syntax may vary if you used a data.frame,
+or if you included additional parameters, like `size`.
+Here we wanted the points to be larger,
+so including `size = 8` will get us there.
+
+
+```{r}
+# Store as a new data variable
+alphadt = data.table(pAlpha$data)
+# Subset to just the Shannon index
+alphadt <- alphadt[(variable == "Shannon")]
+# Order by Days
+alphadt <- alphadt[order(DaysSinceExperimentStart)][(is.na(se))]
+# Define the plot
+ggplot(data = alphadt, 
+       mapping = aes(DaysSinceExperimentStart, value,
+                     color = SampleType)) +
+                     # shape = ReportedAntibioticUsage)) + 
+  geom_point(size = 5) + 
+  geom_path() +
+  geom_point(data = alphadt[(ReportedAntibioticUsage == "Yes")], 
+             size = 8, alpha = 0.35) +
+  facet_wrap(~variable, ncol = 2, scales = "free_y") +
+  ylab("Shannon Index") +
+  ggtitle("Shannon Index in Moving Pictures Dataset")
+```
+
+
+### Extra Credit: Zoom-In on a phylum
+
+Choose a phylum in the datset, subset to just these taxa, and repeat the alpha diversity analysis.
+
+- Does your impression of the general patterns of samples and time in the dataset change?
+- Are there any suprising differences?
+
+
+
+---
+
+# Beta Diversity: Distances
+
+Let's use and compare two different and widely-used ecological distances:
+
+- Bray-Curtis
+- weighted UniFrac
+
+Both distances are sensitive to differences in total counts 
+and a deluge of rare taxa.
+Let's transform to relative abundance, 
+and also apply those filtering criteria that we explored earlier.
+
+1. Define a variable, `keepTaxa`, 
+that contains the OTU identifiers
+of the OTUs that you want to retain
+(not the ones that you want to remove/filter).
+2. Before filtering, transform the counts to relative abundance
+using the `transform_sample_counts()` function.
+Hint: the transformation function should be:
+`function(x){x / sum(x)}`.
+Save this object as `mpra`,
+for "Moving Pictures Relative Abundance".
+As with any function in this tutorial,
+if this step sounds confusing, read the documentation, 
+its examples, or examples on "the web".
+3. Apply the filter, keeping only OTUs that you defined in `keepTaxa`,
+but apply the filter to `mpra`
+using the `prune_taxa()` function.
+Save this as an object named `mpraf`.
+4. Calculate the Bray-Curtis and Weighted UniFrac distances
+using the `distance()` function.
+Save each distance matrix as
+`DistBC` and `DistUF`, respectively.
+
+```{r}
+# Define taxa to keep.
+keepTaxa = prevdt[(Prevalence >= 10 & TotalCounts > 3), TaxaID]
+# Define new object with relative abundance
+mpra = transform_sample_counts(mp, function(x) x / sum(x))
+# Filter this new object
+mpraf = prune_taxa(keepTaxa, mpra)
+# Calculate distances
+DistBC = distance(mpraf, method = "bray")
+DistUF = distance(mpraf, method = "wUniFrac")
+```
+
+### **Extra Credit** Do this in 5 lines of code.
+
+
+---
+
+# Multidimensional Scaling (MDS aka PCoA)
+
+## Perform MDS ("PCoA") Ordination 
+
+1. Perform MDS ("PCoA") on each distance matrix
+using the `ordinate()` function.
+The first argument should be your phyloseq object, `mpraf`.
+Save each PCoA ordination result as `ordBC` and `ordUF`, respectively.
+
+```{r}
+ordBC = ordinate(mpraf, method = "PCoA", distance = DistBC)
+ordUF = ordinate(mpraf, method = "PCoA", distance = DistUF)
+```
+
+## Scree Plot
+
+Before exploring the PCoA plot,
+let's explore a property of each ordination itself.
+The eigenvalues associated with each axis indicate
+the relative proportion of total variability within the distance matrix
+that is represented in that axis.
+The axes are already ordered from most variability to least,
+and so a plot of these values in order of each axis
+gives a helpful impression as to
+which, and how many, axes we should bother plotting and interpreting.
+
+1. Generate and evaluate the "Scree Plot" for each ordination,
+using the `plot_scree()` function in phyloseq.
+Include a title for each.
+2. Jump back and fourth between the two and note any differences.
+
+**How much of the information in the data does each axis represent?**
+
+**Are the firs two axes a pretty good summary of the data? Or do we need to consider others?**
+
+```{r}
+plot_scree(ordBC, "Scree Plot: Bray-Curtis MDS")
+plot_scree(ordUF, "Scree Plot: Weighted UniFrac MDS")
+```
+
+
+## MDS / PCoA
+
+Finally, let's plot a PCoA for each distance-and-ordination
+using the `plot_ordination()` function in phyloseq.
+
+Include the following characteristics in the plot,
+but explore others as you go.
+It's fun and useful to see the plot layers build up.
+Sometimes this inspires you to include some new variable
+in the annotations of the plot.
+
+1. Map color to `"SampleType"`
+2. Add a new `geom_point()` layer to replace the original,
+and in doing so, add additional aesthetic (`aes()`) parameters.
+Map `size` to `DaysSinceExperimentStart`,
+and `shape` to `factor(Subject)`
+3. Add a title for each one indicating what ordination type it is
+(e.g. PCoA),
+and also what distance was used.
+These are both critical features for interpreting an ordination,
+and should always be reported.
+
+```{r}
+plot_ordination(mpraf, ordBC, color = "SampleType") + 
+  geom_point(mapping = aes(size = DaysSinceExperimentStart, 
+                           shape = factor(Subject))) +
+  ggtitle("PCoA: Bray-Curtis")
+plot_ordination(mpraf, ordUF, color = "SampleType") + 
+    geom_point(mapping = aes(size = DaysSinceExperimentStart, 
+                           shape = factor(Subject))) +
+  ggtitle("PCoA: Weigthed Unifrac")
+```
+
+
+## Axes vs. Time and Body Site
+
+That was fun, but I was a little disappointed
+with how well I was able to interpret the effect of time
+when it is displayed as point size.
+Very large effects can be visible,
+but subtle differences or gradients are much harder to see.
+
+Another way to address a continuous sample variable,
+but still make use of the ordination,
+is to plot a key axis (e.g. the first axis)
+against the continuous variable.
+In this sense you might think of the first axis position
+as the microbiome biolical "response varible"
+versus an independent variable, like time.
+
+Ordination results objects (e.g. `ordBC`)
+will often have different structure.
+In this case, we can axes the matrix of 
+samples-by-ordination-axes in `ordBC$vectors`.
+
+1. Store this matrix, `ordBC$vectors` as a new object,
+while also converting it to a `data.table` or `data.frame`.
+2. Make sure the sample identifiers are included.
+3. Join this ordination position data
+with your `sample_data()`, 
+and save this object as `ordBCdt`
+4. Order `ordBCdt` by `DaysSinceExperimentStart`
+so that we can smoothly connect time-adjacent points in a plot.
+5. Create a ggplot2 scatterplot graphic that maps
+`DaysSinceExperimentStart` to the horizontal axis,
+PCoA `Axis.1` to the vertical axis,
+color to `factor(Subject)`,
+and facet by `SampleType` (the body site).
+6. Add a `geom_path()` layer to this.
+If you ordered the data table properly, 
+the lines will connect time-adjacent points,
+and hopefully look nice.
+7. Add an informative title.
+8. Repeat this for each distance type.
+
+**Do you see any intersting patterns?**
+
+**Is one body site more time-variant than others?**
+
+**Does it appear that there is temporal autocorrelation? That is, do previous time points predict the axis position of the next time point?**
+
+**How might you evaluate this question statistically?**
+
+### For Bray-Curtis
+
+```{r}
+# Join sample data and ordination axes together in one data.table
+ordBCdt = data.table(ordBC$vectors, keep.rownames = TRUE)
+setnames(ordBCdt, "rn", "SampleID")
+setkey(ordBCdt, SampleID)
+setkey(sdt, SampleID)
+ordBCdt <- ordBCdt[sdt]
+setorder(ordBCdt, DaysSinceExperimentStart)
+# Axis 1
+ggplot(ordBCdt, aes(DaysSinceExperimentStart, Axis.1, color = factor(Subject))) +
+  geom_point(size = 5) + 
+  geom_path() +
+  facet_wrap(~SampleType) + ggtitle("Bray-Curtis PCoA Axis-1 vs. Day")
+# Axis 2
+ggplot(ordBCdt, aes(DaysSinceExperimentStart, Axis.2, color = factor(Subject))) +
+  geom_point(size = 5) + 
+  geom_path() +
+  facet_wrap(~SampleType) + ggtitle("Bray-Curtis PCoA Axis-2 vs. Day")
+```
+
+### For Weighted Unifrac
+
+```{r}
+# Join sample data and ordination axes together in one data.table
+ordUFdt = data.table(ordUF$vectors, keep.rownames = TRUE)
+setnames(ordUFdt, "rn", "SampleID")
+setkey(ordUFdt, SampleID)
+setkey(sdt, SampleID)
+ordUFdt <- ordUFdt[sdt]
+setorder(ordUFdt, DaysSinceExperimentStart)
+# Axis 1
+pDax1 = ggplot(ordUFdt, aes(DaysSinceExperimentStart, Axis.1, color = factor(Subject))) +
+  geom_point(size = 5) + 
+  geom_path() +
+  facet_wrap(~SampleType) + ggtitle("wUF PCoA Axis-1 vs. Day")
+pDax1
+# Axis 2
+pDax2 = ggplot(ordUFdt, aes(DaysSinceExperimentStart, Axis.2, color = factor(Subject))) +
+  geom_point(size = 5) + 
+  geom_path() +
+  facet_wrap(~SampleType) + ggtitle("wUF PCoA Axis-2 vs. Day")
+pDax2 
+```
+
+
+## Multiple PCs plots in one graphic.
+
+Multiple ggplot2 objects
+(or more generally, any graphics objects based on the *grid* package)
+can be combined into one plot
+using the `grid.arrange()` function in the *gridExtra* package.
+
+1. Use the `gridExtra::grid.arrange()` function
+to combine the plots from the previous section.
+
+```{r}
+gridExtra::grid.arrange(pDax1, pDax2, ncol = 1)
+```
+
+
+---
+
+## Procrustes and ggplot2
+
+### Procrustes rotation between samples from each choice of distance
+
+Rather than attempt a complicated series of prompting statements,
+I've just included an example for how to do this.
+Feel free to explore the documentation for `ade4::procuste`,
+especially the plotting demos included in the examples section.
+The *ade4* package is an extremely powerful collection
+of ordination methods for various complex experimental designs
+well beyond our current example with a single OTU table
+and a few sample covariates of interest.
+
+```{r, echo = TRUE, include = TRUE}
+# Order both tables by sample ID
+setkey(ordBCdt, SampleID)
+setkey(ordUFdt, SampleID)
+pro1 <- ade4::procuste(dfX = ordBCdt[, list(Axis.1, Axis.2)],
+                       dfY = ordUFdt[, list(Axis.1, Axis.2)])
+# Add the procruste rotated and scaled coordinates to each table
+ordBCdt[, c("New1", "New2") := pro1$tabX]
+ordUFdt[, c("New1", "New2") := pro1$tabY]
+# Combine the tables for plottiing
+ordBCdt[, D := "Bray-Curtis"]
+ordUFdt[, D := "w-UniFrac"]
+keepCols = c("New1", "New2", "SampleID", "D", "SampleType",
+             "DaysSinceExperimentStart", "Subject", "ReportedAntibioticUsage")
+procrustdt = rbindlist(list(ordBCdt[, keepCols, with = FALSE],
+                            ordUFdt[, keepCols, with = FALSE]))
+# Now define the ggplot object, 
+# connecting points with the same sample ID, but different distances
+ggplot(procrustdt, aes(New1, New2,
+                       color = D, shape = SampleType)) + 
+  geom_point(size = 5) +
+  geom_line(aes(group = SampleID), color = "black") + 
+  ggtitle("Procruste rotation comparing MDS
+          from two different distance measures")
+```
+

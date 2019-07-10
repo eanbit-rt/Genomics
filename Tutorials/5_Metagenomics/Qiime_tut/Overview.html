@@ -1,0 +1,139 @@
+<!Doctype HTML>
+<html lang="en">
+     <head>
+          <meta charset="UTF-8">
+          <title>liquid layout</title>
+
+     </head>
+
+<body style="width: 90%">
+
+
+<h3 xmlns="http://www.w3.org/1999/xhtml" id="sites-page-title-header" style="" align="left">
+<span id="sites-page-title" dir="ltr" tabindex="-1" style="outline: none">QIIME 1.x Overview Tutorial</span>
+</h3>
+<div id="sites-canvas-main" class="sites-canvas-main">
+<div id="sites-canvas-main-content">
+<table xmlns="http://www.w3.org/1999/xhtml" class="sites-layout-name-one-column sites-layout-hbox" cellspacing="0"><tbody><tr><td class="sites-layout-tile sites-tile-name-content-1"><div dir="ltr"><div>This
+ tutorial was written for 1.x versions of QIIME, up through QIIME 1.9.1. </div><div><br></div>This
+ tutorial is based on the Overview Tutorial on qiime.org.&nbsp; The main
+ difference is that it breaks down the analysis into separate steps to
+give you a better idea of what each step does.<br><br>
+
+<h2>Outline of steps in Qiime analysis</h2>
+ <img src="Fig1_flowchart.png">
+
+<h4>Experiment</h4>
+
+The data we are analysing are from an experiment investigating the microbiome of fasting and non-fasting mice. The experiment includes nine samples: five controls (mouse gut microbiomes) and four experimental samples (mouse gut microbiomes from fasted mice).
+
+<h4><a name="TOC-First-Thing-s-First:-Open-the-Terminal"></a>First Thing's First: Open the Terminal</h4>
+At the terminal prompt after you have logged in to your account on the server make sure you have Python 3.5.2, then type the following command to start the Qiime environment:
+
+<br><br><font color="#38761d" face="courier new, monospace"><b>conda activate qiime1</b></font><br><br>
+
+
+To exit the virtual environment, simply run the deactivate command:
+
+<br><br><font color="#38761d" face="courier new, monospace"><b>source deactivate</b></font><br><br>
+
+
+
+You should now be looking at a dollar sign ($) with a cursor after it. This
+ is the command line interface for your computer. Here, you can type
+commands in order to "execute" programs. This Unix/Linux command line is
+ a powerful place to analyze and process data. Everything you do in
+QIIME is executed through this command line interface. I'm going to
+assume you have some familiarity with the Unix command line, but I'll
+try to help you along the way with commands like <b>cp</b>, <b>cd</b>, <b>ls</b>, <b>pwd</b>, <b>less</b>, <b>nano</b>, etc.<br>
+
+<h4><a name="TOC-Getting-Started:-Get-the-data-set"></a>Getting Started: Get the data set<br></h4><b style="color:rgb(19,79,92)">Goals</b><br style="color:rgb(19,79,92)"><ul style="color:rgb(19,79,92)">
+<li>Get a copy of the tutorial data in your home folder</li>
+<li>Navigate the terminal and look at text files<br></li>
+<li>Understand the FASTA and mapping file formats</li></ul>
+
+<br><b>In your terminal</b>
+
+<p>Copy the file <span><font color="#38761d" face="courier new, monospace"><b>qiime_overview_tutorial.zip</b></font></span> to your directory from the website: <a href="qiime_overview_tutorial.zip">here.</a>
+Safe the file to your home directory on the server. Unzip the file. </p>
+
+<p><p><font face="arial, sans-serif"></font></p><p><font color="#38761d" face="courier new, monospace"><b><span>unzip&nbsp;</span><span style="background-color:transparent">qiime_overview_tutorial qiime_tutorial</span></b></font></p>
+<p><font face="arial, sans-serif"></font></p><p><font color="#38761d" face="courier new, monospace"><b><span>mv&nbsp;</span><span style="background-color:transparent">qiime_overview_tutorial qiime_tutorial</span></b></font></p><br>(All one line. As long as you're reading this tutorial <i>inside</i>
+ the VirtualBox, you should be able to copy-paste commands with
+control-c and control-shift-v. On the server terminal, you have to
+use shift along with control in copy/paste operations.)<br><br>
+Now you should have a folder called <b>qiime_tutorial</b>
+ in your home folder.&nbsp; If you look in this folder using the file
+browser, you should see a bunch of different files, many of which start
+with "Fasting_Example..."&nbsp; You can see these files in the terminal
+as well. However, first you have to navigate to that folder within the
+terminal, using the <b>cd</b> ("change directory") command like this:<br><br><b style="color:rgb(56,118,29);font-family:courier new,monospace">cd ~/</b><b style="font-family:courier new,monospace"><span style="color:rgb(56,118,29)">qiime_tutorial</span></b><br><br>Once
+ you've entered that command, press Enter (Return). Now you should be in
+ the directory you specified. You can always check the location of your
+current directory (aka folder) using the <b>pwd</b> command.&nbsp; If you type:<br><br><b style="font-family:courier new,monospace;color:rgb(56,118,29)">pwd</b><br><br>it should return something like "/Users/YourName/qiime_tutorial" as the output.<br><br>To see the contents of the current folder, you can use the <b>ls</b> command.&nbsp; I like to add some options to ls, in order to get a little more information:<br><br><b style="font-family:courier new,monospace;color:rgb(56,118,29)">ls -lh</b><br><br>should give you this as an output:</div><div><br><font style="font-family:courier new,monospace" size="1">drwxr-xr-x+ 3 werner&nbsp; staff&nbsp;&nbsp; 102B Mar&nbsp; 5 12:24 18S_tutorial_files<br>-rw-r--r--+ 1 werner&nbsp; staff&nbsp;&nbsp; 454K Mar&nbsp; 5 12:24 Fasting_Example.fna<br>-rw-r--r--+ 1 werner&nbsp; staff&nbsp;&nbsp; 1.1M Mar&nbsp; 5 12:24 Fasting_Example.qual<br>-rw-r--r--+ 1 werner&nbsp; staff&nbsp;&nbsp; 2.1M Mar&nbsp; 5 12:24 Fasting_Example.sff<br>-rw-r--r--+ 1 werner&nbsp; staff&nbsp;&nbsp; 6.0M Mar&nbsp; 5 12:24 Fasting_Example.sff.txt<br>-rw-r--r--+ 1 werner&nbsp; staff&nbsp;&nbsp; 982B Mar&nbsp; 5 12:24 Fasting_Map.txt</font><br><br>The
+ right-most column has the names of files and directories within your
+current folder.&nbsp; You can tell which entries are directories by the
+first column of data -- directories have a "d" in the first character of
+ the permissions data.&nbsp; You will also see who owns each file, and a
+ column listing file sizes and the date and time a file was last
+modified.&nbsp; For now we'll ignore the rwx information, but those
+indicate whether the owner, group of users, or all users have permission
+ to read, write, or execute a file.<br><br>The primary file format for
+storing sequence data supported by QIIME is the FASTA format. The file
+Fasting_Example.fna is in FASTA format, indicated by the suffix ".fna"
+which stands for <b style="color:rgb(153,0,0)">F</b>ASTA <b style="color:rgb(153,0,0)">n</b>ucleic <b style="color:rgb(153,0,0)">a</b>cids (as opposed to amino acids which would have a suffix ".faa").&nbsp; You <i>could</i>
+ look at this file in a text editor (it is plain text, or ASCII,
+format), but many FASTA files you may work with will be too large to
+open in a text editor. The Unix command line offers several ways of
+looking at the contents of a text file without having to load the whole
+thing into memory. One very useful command for this is <i><b>less</b></i>.&nbsp; To use less to look at the contents of a text file, you just type <i>less</i> - spacebar - and then the name of the file.&nbsp; Try this command:<br><b style="font-family:courier new,monospace;color:rgb(56,118,29)"><br>less Fasting_Example.fna</b><br><br>You
+ should now see the first few lines of that FASTA file.&nbsp; You can
+scroll down and up using the arrow keys, or page down and up using the
+space bar and the "b" key.&nbsp; You can always return to the very top
+of the file by pressing "g". If you want to exit the less program, you
+can press "q".<br><br>Notice the format of these sequence entries.&nbsp; Each entry starts with a line of metadata, called the <b>header</b>.
+ A header always starts with a "&gt;" symbol, followed by a unique
+identifier, or ID, followed by a space and then some other data. <br><br><font style="font-family:courier new,monospace" size="1">&gt;FLP3FBN01ELBSX length=250 xy=1766_0111 region=1 run=R_2008_12_09_13_51_01_<br>ACAGAGTCGGCTCATGCTGCCTCCCGTAGGAGTCTGGGCCGTGTCTCAGTCCCAATGTGG<br>CCGTTTACCCTCTCAGGCCGGCTACGCATCATCGCCTTGGTGGGCCGTTACCTCACCAAC<br>TAGCTAATGCGCCGCAGGTCCATCCATGTTCACGCCTTGATGGGCGCTTTAATATACTGA<br>GCATGCGCTCTGTATACCTATCCGGTTTTAGCTACCGTTTCCAGCAGTTATCCCGGACAC<br>ATGGGCTAGG</font><br><br>This sequence's ID is FLP3FBN01ELBSX (a unique ID assigned by the 454 pyrosequencing software). The header consists of <i>only</i>
+ one line, and ends with a RETURN or NEWLINE character.&nbsp; Any lines
+following the header are sequence data.&nbsp; The sequence data ends for
+ that specific entry either when a new header line is initiated with the
+ "&gt;" character, or with the end of the file.<br><br>Press "q" to quit <i>less</i>.&nbsp;
+ You can count how many sequences are in the file by searching for the
+"&gt;" character in the file. This can be done using a program called <b>grep</b>, like this:<br><br><b style="color:rgb(56,118,29)"><span style="font-family:courier new,monospace">grep -c "&gt;" Fasting_Example.fna</span></b><br><br>This should return "<b>1339</b>"
+ -- meaning there are 1339 lines with "&gt;" characters in them and,
+therefore, 1339 FASTA entries in the file. (The grep program normally
+searches for text lines that match the search string you enter, and the <b>-c</b> option asks grep to just count how many lines match, rather than displaying all the matching lines in the terminal.)<br><br>You
+ also have data on the quality of each base. The quality data are stored
+ in a separate file that ends in the ".qual" suffix.&nbsp; Find that
+file, and look at its contents using the <i>less</i> command.&nbsp; The first entry should look like this:<br><br><font size="1">&gt;FLP3FBN01ELBSX length=250 xy=1766_0111 region=1 run=R_2008_12_09_13_51_01_<br>37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 36 36 33 33 33 36 37 37 37 37 <br>37 37 40 40 40 39 39 38 40 40 40 40 40 40 40 37 37 37 37 37 35 35 35 37 37 37 37 37 35 35<br>35 31 31 23 23 23 31 21 21 21 35 35 37 37 37 36 36 36 36 36 36 37 37 37 37 37 37 37 37 37 <br>37 37 37 37 37 37 37 37 37 37 37 28 28 28 36 36 37 37 37 37 37 37 37 37 37 37 37 37 37 37<br>37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 36 36 36 37 37 37 37 37 37 37 37 37 37 37 <br>37 36 36 36 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 35 32 32 32 32 35 37 37 37 37<br>37 37 37 37 37 37 37 37 37 37 37 37 37 37 36 32 32 32 36 37 35 32 32 32 32 32 32 32 32 36 <br>37 37 37 37 36 36 31 31 32 32 36 36 36 36 36 36 36 36 36 36 36 28 27 27 27 26 26 26 30 29<br>30 29 24 24 24 21 15 15 13 13</font><br><br>A
+ qual file starts each entry with a header, identical to the FASTA
+format. Following each header is a series of numbers that denote the
+quality of each base (on a scale from 1 to 40). E.g., each number above
+corresponds with a respective base in the sequence FLP3FBN01ELBSX in the
+ .fna file.&nbsp; Now, quit <i>less</i> and use <i>grep</i> to check how many entries are in this qual file -- it should also have 1339 entries.<br><br>The last file we'll look at now is the <b>sample mapping file</b>. It is called Fasting_Map.txt and you can look at it with <i>less</i>
+ if you like, though this may not be an easy way to examine the
+file.&nbsp; This file is a table of tab-delimited information, and it is
+ specifically formatted for the QIIME software. If you perform an
+experiment and generate your own sequencing data, you would have to make
+ your own mapping file.&nbsp; Let's look at the mapping file in a
+spreadsheet. That will be easier. To do this, open the file in a text
+editor (it is a small enough file to do this), copy all the contents
+into the clipboard, open a new spreadsheet, and paste in the contents.
+(The virtual box has a text editor and a spreadsheet, LibreOffice, built
+ in). In LibreOffice, pasting these data will cause a
+dialogue box to open up. Be sure to select that the data are "<b>Separated by</b>" "<b>Tab</b>".&nbsp; <br><br>The
+ mapping file starts with one or more lines initiated by the "hash"
+symbol (#).&nbsp; The first of these initial lines should contain the
+headers, or titles, of each column of data, starting with the SampleID,
+followed by BarcodeSequence and the LinkerPrimerSequence.&nbsp; All the
+other columns are optional, and specific to the samples.&nbsp; The
+SampleID entries should be short, unique identifiers for your
+samples.&nbsp; They will get incorporated into the results data as you
+generate it.&nbsp; More information on the mapping file format is <a href="http://qiime.org/tutorials/tutorial.html#mapping-file-tab-delimited-txt">here</a> and <a href="http://qiime.org/documentation/file_formats.html">here</a>.&nbsp; <br><br>You
+ can see that this sequencing experiment included nine samples: five
+controls (mouse gut microbiomes) and four experimental samples (mouse
+gut microbiomes from fasted mice).&nbsp; If you want to make your own
+mapping file for an experiment, you could do so in a spreadsheet
+program, making sure to save the file as a tab-delimited text file.<br><br><hr width="100%" size="2"><i>Next Step</i>: <a href="A.Trimming_Barcodes.html"><b>Trimming Barcodes</b></a><br><br></div></div></td></tr></tbody></table>
+
+</body></html>
