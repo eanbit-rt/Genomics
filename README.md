@@ -31,7 +31,7 @@ Change to the eanbit2020 directory and you will see the four folders with the tu
 
 Create a new Bioconda environment for the course to install all the necessary software needed for the course using Anaconda.
 
-  ''conda create --name eanbit python=2.7''
+  ``conda create --name eanbit python=2.7``
 
 Activate the newly created eanbit environment:
 
@@ -39,7 +39,7 @@ Activate the newly created eanbit environment:
 
 Install the following packages in the eanbit environment:
 
-  conda install -c bioconda fastqc
+``  conda install -c bioconda fastqc
   conda install -c bioconda artemis
   conda install -c bioconda trimmomatic
   conda install -c bioconda bwa
@@ -52,4 +52,4 @@ Install the following packages in the eanbit environment:
   conda install -c bioconda tophat
   conda install -c bioconda cufflinks
   conda install -c bioconda gatk
-  conda install -c hcc abacas
+  conda install -c hcc abacas``
