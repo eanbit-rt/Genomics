@@ -1,19 +1,21 @@
 # Genomics
 ## Geomics and metagenomics workshop course material
 
-Day 1
+**Day 1**
 * Quality Control of Sequence data
 * Artemis viewer
 
-Day2
+**Day2**
 * Mapping sequence data
 * Genome Assembly
 
-Day 3
+**Day 3**
 * Genome Annotation
 
-Day 4
+**Day 4**
 * Metagenomics
+
+**Instructions**
 
 The course website is found here: http://41.89.129.26/eanbit2020/
 
