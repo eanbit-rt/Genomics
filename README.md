@@ -40,12 +40,11 @@ Activate the newly created eanbit environment:
 Install the following packages in the eanbit environment:
 
 ``  conda install -c bioconda fastqc``
-
-  conda install -c bioconda artemis
+ `` conda install -c bioconda artemis``
   
-  conda install -c bioconda trimmomatic
+`` conda install -c bioconda trimmomatic``
   
-  conda install -c bioconda bwa
+ `` conda install -c bioconda bwa``
   
   conda install -c bioconda samtools
   
