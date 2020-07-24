@@ -39,7 +39,7 @@ Activate the newly created eanbit environment:
 
 Install the following packages in the eanbit environment:
 
-``  conda install -c bioconda fastqc
+``  conda install -c bioconda fastqc``
 
   conda install -c bioconda artemis
   
