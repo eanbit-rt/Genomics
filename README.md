@@ -17,11 +17,11 @@
 
 **Instructions**
 
-The course website is found here: http://41.89.129.26/eanbit2020/
+The course website is found here: [http://41.89.129.26/eanbit2020/]
 
 Download the file eanbit2020.tar.gz from the site to your home directory on the server where you want to work.
 
-  wget http://41.89.129.26/eanbit2020/eanbit2020.tar.gz .
+  [wget http://41.89.129.26/eanbit2020/eanbit2020.tar.gz .]
 
 Uncompress the file:
 
