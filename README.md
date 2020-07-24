@@ -40,28 +40,29 @@ Activate the newly created eanbit environment:
 Install the following packages in the eanbit environment:
 
 ``  conda install -c bioconda fastqc``
+
  `` conda install -c bioconda artemis``
   
 `` conda install -c bioconda trimmomatic``
   
  `` conda install -c bioconda bwa``
   
-  conda install -c bioconda samtools
+  ``conda install -c bioconda samtools``
   
-  conda install -c bioconda bcftools
+  ``conda install -c bioconda bcftools``
   
-  conda install -c bioconda velvet
+  ``conda install -c bioconda velvet``
   
-  conda install -c bioconda blast
+  ``conda install -c bioconda blast``
   
-  conda install -c bioconda ratt
+  ``conda install -c bioconda ratt``
   
-  conda install -c bioconda augustus
+  ``conda install -c bioconda augustus``
   
-  conda install -c bioconda tophat
+  ``conda install -c bioconda tophat``
   
-  conda install -c bioconda cufflinks
+  ``conda install -c bioconda cufflinks``
   
-  conda install -c bioconda gatk
+ `` conda install -c bioconda gatk``
   
-  conda install -c hcc abacas``
+  ``conda install -c hcc abacas``
